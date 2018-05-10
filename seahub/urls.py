@@ -119,6 +119,8 @@ urlpatterns = [
     url(r'^sso/$', sso, name='sso'),
     url(r'^shib-login/', shib_login, name="shib_login"),
     url(r'^oauth/', include('seahub.oauth.urls')),
+    url(r'^client-sso/(?P<uuid>[^/]+)/$', client_sso, name="client_sso"),
+    url(r'^client-sso/(?P<uuid>[^/]+)/complete/$', client_sso_complete, name="client_sso_complete"),
 
     url(r'^$', libraries, name='libraries'),
     #url(r'^home/$', direct_to_template, { 'template': 'home.html' } ),
