@@ -49,7 +49,6 @@
         <td>
           {% if not user.is_self %}
           <a href="#" class="remove-user-btn op vh">{% trans "Delete" %}</a>
-          <a href="#" class="reset-user-btn op vh" data-url="{% url 'user_reset' user.email %}" data-target="{{ user.email }}">{% trans "ResetPwd" %}</a>
           {% endif %}
         </td>
     </tr>
