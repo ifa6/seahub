@@ -39,13 +39,16 @@ html, body { padding:0; margin:0; height:100%; }
             "callbackUrl": "{{ callback_url }}",
             "lang": "{{ LANGUAGE_CODE }}",
             "mode": {% if can_edit %}"edit"{% else %}"view"{% endif %},
+            {% if username %}
             "user": {
                 "name": "{{ username|email2nickname|escapejs }}"
             }
+            {% endif %}
         }
     };
     var docEditor = new DocsAPI.DocEditor("placeholder", config);
 
+    {% if can_edit %}
     var interval;
     var refreshLock = function() {
         $.ajax({
@@ -70,6 +73,7 @@ html, body { padding:0; margin:0; height:100%; }
         });
     };
     interval = setInterval(refreshLock, 60 * 1000);
+    {% endif %}
 </script>
 </body>
 </html>
