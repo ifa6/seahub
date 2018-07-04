@@ -21,8 +21,7 @@ from seahub.base.templatetags.seahub_tags import email2nickname
 from seahub.invitations.models import Invitation
 from seahub.utils.repo import get_repo_shared_users
 from seahub.utils import normalize_cache_key
-from seahub.utils.timeutils import datetime_to_isoformat_timestr
-from seahub.constants import HASH_URLS 
+from seahub.constants import HASH_URLS
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ logger = logging.getLogger(__name__)
 ########## system notification
 class Notification(models.Model):
     message = models.CharField(max_length=512)
-    primary = models.BooleanField(default=False, db_index=True)
+    primary = models.BooleanField(default=False, db_column='is_primary')
 
 class NotificationForm(ModelForm):
     """
