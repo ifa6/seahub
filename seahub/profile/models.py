@@ -77,11 +77,14 @@ class ProfileManager(models.Manager):
     def get_contact_email_by_user(self, username):
         """Get a user's contact email, use username(login email) if not found.
         """
-        p = self.get_profile_by_user(username)
-        if p and p.contact_email:
-            return p.contact_email
-
-        return username
+        # Start Alibaba Group related
+        return ''
+        # End Alibaba Group related
+        # p = self.get_profile_by_user(username)
+        # if p and p.contact_email:
+        #     return p.contact_email
+        # else:
+        #     return username
 
     def get_username_by_login_id(self, login_id):
         """Convert a user's login id to username(login email).

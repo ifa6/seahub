@@ -34,7 +34,7 @@ class AlibabaProfileManager(models.Manager):
 
 class AlibabaProfile(models.Model):
     id = models.BigAutoField(primary_key=True)
-    uid = models.CharField(max_length=64)
+    uid = models.CharField(max_length=191, unique=True)
     personal_photo_url = models.CharField(max_length=225, blank=True, null=True)
     person_id = models.BigIntegerField(unique=True)
     emp_name = models.CharField(max_length=64, blank=True, null=True)

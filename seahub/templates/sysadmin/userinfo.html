@@ -25,9 +25,6 @@
             <dt>{% trans "Avatar" %}</dt>
             <dd>{% avatar email 48 %}</dd>
 
-            <dt>{% trans "Email" %}</dt>
-            <dd>{{ email }}</dd>
-
             {% if org_name %}
             <dt>{% trans "Organization" %}</dt>
             <dd>{{ org_name }}</dd>
@@ -36,49 +33,29 @@
             <dt>{% trans "Name" context "true name" %}</dt>
             <dd>
                 <span id="nickname">
-                    {% if profile and profile.nickname %}
-                    {{ profile.nickname }}
-                    {% else %}
-                    --
-                    {% endif %}
+                    {{ email|email2nickname }}
                 </span>
-                <span id="set-name" title="{% trans "Edit"%}" class="sf2-icon-edit op-icon"></span>
             </dd>
 
-            <dt>{% trans "Login ID" %}</dt>
-            <dd>
-                <span id="loginid">
-                    {% if profile and profile.login_id %}
-                    {{ profile.login_id }}
-                    {% else %}
-                    --
-                    {% endif %}
-                </span>
-                <span id="set-loginid" title="{% trans "Edit"%}" class="sf2-icon-edit op-icon"></span>
-            </dd>
-
-            <dt>{% trans "Contact Email" %}</dt>
-            <dd>
-                <span id="contact-email">
-                    {% if profile and profile.contact_email %}
-                    {{ profile.contact_email }}
-                    {% else %}
-                    --
-                    {% endif %}
-                </span>
-                <span id="set-contact-email" title="{% trans "Edit"%}" class="sf2-icon-edit op-icon"></span>
-            </dd>
-
-            <dt>{% trans "Reference ID" %}</dt>
+            <dt>工号</dt>
             <dd>
                 <span id="reference-id">
-                    {% if reference_id %}
-                    {{ reference_id }}
-                    {% else %}
-                    --
-                    {% endif %}
+                  {{ ali_profile.work_no }}
                 </span>
-                <span id="set-reference-id" title="{% trans "Edit" %}" class="sf2-icon-edit op-icon"></span>
+            </dd>
+
+            <dt>职位</dt>
+            <dd>
+                <span id="reference-id">
+                  {{ ali_profile.post_name }}
+                </span>
+            </dd>
+
+            <dt>{% trans "Department" %}</dt>
+            <dd>
+                <span id="department">
+                  {{ ali_profile.dept_name }}
+                </span>
             </dd>
 
             {% if d_profile and d_profile.telephone %}
@@ -98,7 +75,6 @@
                     <span class="error">{% trans "Error" %}</span>
                     {% endif %}
                 </span>
-                <span id="set-quota" title="{% trans "Edit Quota" %}" class="sf2-icon-edit op-icon"></span>
             </dd>
 
             {% if two_factor_auth_enabled %}
