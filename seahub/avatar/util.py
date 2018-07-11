@@ -127,5 +127,25 @@ def get_avatar_file_storage():
             'size_column': 'size',
             }
         return get_storage_class(AVATAR_FILE_STORAGE)(options=dbs_options)
-    
-    
+
+from seahub.alibaba.models import AlibabaProfile
+from seahub.utils import normalize_cache_key
+def get_alibaba_user_avatar_url(user):
+    if isinstance(user, User):
+        uid = user.username
+    else:
+        uid = user
+
+    key = normalize_cache_key(uid, 'SF_AVATAR_')
+    cached_avatar = cache.get(key)
+    if cached_avatar and cached_avatar.strip():
+        return cached_avatar.strip()
+
+    ali_p = AlibabaProfile.objects.get_profile(uid)
+    if not ali_p:
+        return None
+
+    print 'get alibaba user phote url'
+
+    cache.set(key, ali_p.personal_photo_url, AVATAR_CACHE_TIMEOUT)
+    return ali_p.personal_photo_url

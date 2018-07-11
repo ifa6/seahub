@@ -9,6 +9,7 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
+from django.utils import translation
 from django.utils.translation import ugettext as _
 
 import seaserv
@@ -34,6 +35,7 @@ from seahub.share.signals import share_repo_to_user_successful, share_repo_to_gr
 from seahub.constants import PERMISSION_READ, PERMISSION_READ_WRITE, \
         PERMISSION_ADMIN
 
+from seahub.alibaba.models import AlibabaProfile
 
 logger = logging.getLogger(__name__)
 json_content_type = 'application/json; charset=utf-8'
@@ -70,12 +72,22 @@ class DirSharedItemsEndpoint(APIView):
         # change is_admin to True if user is repo admin.
         admin_users = ExtraSharePermission.objects.get_admin_users_by_repo(repo_id)
         ret = []
+
+        if translation.get_language() != 'zh-cn':
+            use_en = True
+        else:
+            use_en = False
+
         for item in share_items:
+            ali_p = AlibabaProfile.objects.get_profile(item.user)
             ret.append({
                 "share_type": "user",
                 "user_info": {
                     "name": item.user,
                     "nickname": email2nickname(item.user),
+                    "work_no": ali_p.work_no,
+                    "post_name": ali_p.post_name_en if use_en else ali_p.post_name,
+                    "department": ali_p.dept_name_en if use_en else ali_p.dept_name,
                 },
                 "permission": item.perm,
                 "is_admin": item.user in admin_users
@@ -313,7 +325,7 @@ class DirSharedItemsEndpoint(APIView):
                 if self.has_shared_to_user(request, repo_id, path, to_user):
                     result['failed'].append({
                         'email': to_user,
-                        'error_msg': _(u'This item has been shared to %s.') % to_user
+                        'error_msg': _(u'This item has been shared to %s.') % email2nickname(to_user)
                         })
                     continue
 

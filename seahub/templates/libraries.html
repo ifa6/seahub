@@ -193,7 +193,11 @@ html,body {
     <span class="loading-icon loading-tip"></span>
     <div class="empty-tips hide">
         <h2 class="alc">{% trans "You do not have connected devices" %}</h2>
-        <p>{% trans "Your clients (Desktop/Android/iOS) will be listed here." %}</p>
+        {% if LANGUAGE_CODE == 'zh-cn' %}
+        <p>你的客户端将在这儿列出。</p>
+        {% else %}
+        <p>Your clients will be listed here.</p>
+        {% endif %}
     </div>
 </div>
 </script>

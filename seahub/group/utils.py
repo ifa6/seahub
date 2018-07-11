@@ -3,6 +3,7 @@
 import re
 import logging
 from django.core.cache import cache
+from django.utils import translation
 
 import seaserv
 from seaserv import ccnet_api
@@ -13,6 +14,8 @@ from seahub.base.templatetags.seahub_tags import email2nickname
 from seahub.avatar.settings import AVATAR_DEFAULT_SIZE
 from seahub.avatar.templatetags.avatar_tags import api_avatar_url, \
     get_default_avatar_url
+
+from seahub.alibaba.models import AlibabaProfile
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +112,12 @@ def get_group_member_info(request, group_id, email, avatar_size=AVATAR_DEFAULT_S
     elif is_admin:
         role = 'Admin'
 
+    if translation.get_language() != 'zh-cn':
+        use_en = True
+    else:
+        use_en = False
+
+    ali_p = AlibabaProfile.objects.get_profile(email)
     member_info = {
         'group_id': group_id,
         "name": email2nickname(email),
@@ -118,6 +127,9 @@ def get_group_member_info(request, group_id, email, avatar_size=AVATAR_DEFAULT_S
         "avatar_url": request.build_absolute_uri(avatar_url),
         "is_admin": is_admin,
         "role": role,
+        "work_no": ali_p.work_no,
+        "post_name": ali_p.post_name_en if use_en else ali_p.post_name,
+        "department": ali_p.dept_name_en if use_en else ali_p.dept_name,
     }
 
     return member_info

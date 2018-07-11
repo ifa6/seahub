@@ -687,11 +687,18 @@ define([
                 url = _this.getUrl({name: 'search_user'});
             }
 
+            var p_l = '';
+            if (app.pageOptions.language_code == 'zh-cn') {
+                p_l = '工号、姓名或者花名';
+            }
+            else {
+                p_l = 'Employee ID, employee name or nick name';
+            }
+
             return {
                 language: _this.i18nForSelect2(),
-
                 multiple: true,
-                placeholder: gettext("Search users or enter emails and press Enter"),
+                placeholder: p_l,
 
                 // with 'tags', the user can directly enter, not just select
                 tags: true,

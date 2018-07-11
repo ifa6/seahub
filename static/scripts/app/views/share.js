@@ -648,6 +648,8 @@ define([
                 $.extend(item_data, {
                     "user_email": item.user_info.name,
                     "user_name": item.user_info.nickname,
+                    "post_name": item.user_info.post_name,
+                    "work_no": item.user_info.work_no,
                     "permission": item.permission,
                     'is_admin': item.is_admin
                 });

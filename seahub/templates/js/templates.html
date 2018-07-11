@@ -1621,7 +1621,7 @@
 
 <script type="text/template" id="folder-perm-item-tmpl">
     <% if (for_user) { %>
-    <td><a href="{{ SITE_ROOT }}profile/<% print(encodeURIComponent(user_email)); %>/" target="_blank"><%- user_name %></a></td>
+    <td><a href="{{ SITE_ROOT }}profile/<% print(encodeURIComponent(user_email)); %>/" target="_blank"><%- user_name %> - <%- work_no %> - <%- post_name %></a></td>
     <% } else { %>
     <td><a href="#group/<%= group_id %>/" target="_blank"><%- group_name %></a></td>
     <% } %>
@@ -2001,7 +2001,7 @@
 <script type="text/template" id="group-member-tmpl">
     <img src="<%= avatar_url %>" alt="" width="32" class="avatar-circle fleft" />
     <div class="txt">
-        <p class="txt-item ellipsis" title="<%- name %>"><%- name %>
+        <p class="txt-item ellipsis" title="<%- name %> - <%- work_no %> - <%- post_name %>"><%- name %> - <%- work_no %> - <%- post_name %>
             <% if (is_owner) { %>
                 <span class="group-admin-txt">{% trans "owner" %}</span>
             <% } else if (is_admin) { %>
@@ -2139,7 +2139,7 @@
     <img src="<%= avatar_url %>" alt="" width="20" class="avatar" />
 </td>
 <td>
-    <a href="{{ SITE_ROOT }}profile/<% print(encodeURIComponent(email)); %>/"><%- name %></a>
+    <a href="{{ SITE_ROOT }}profile/<% print(encodeURIComponent(email)); %>/"><%- name %> - <%- work_no %> - <%- post_name %></a>
 </td>
 
 <% if (is_owner) { %>
@@ -2414,7 +2414,7 @@
                 <%- app.pageOptions.name %>
             </div>
         </div>
-        <div class="loading-icon loading-tip"></div>
+        <!-- <div class="loading-icon loading-tip"></div> -->
         <p class="error alc hide"></p>
         <div id="space-traffic" class="hide"></div>
         <a class="item" href="{{ SITE_ROOT }}profile/">{% trans "Settings" %}</a>
