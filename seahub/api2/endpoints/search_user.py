@@ -45,122 +45,100 @@ try:
 except ImportError as e:
     CUSTOM_SEARCH_USER = False
 
+from seahub.alibaba.models import AlibabaProfile
+
 
 class SearchUser(APIView):
-    """ Search user from contacts/all users
+    """ Search user from alibaba profile
     """
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     permission_classes = (IsAuthenticated,)
-    throttle_classes = (UserRateThrottle, )
-
-    def _can_use_global_address_book(self, request):
-
-        return request.user.permissions.can_use_global_address_book()
+    throttle_classes = (UserRateThrottle,)
 
     def get(self, request, format=None):
 
         q = request.GET.get('q', None)
         if not q:
-            return api_error(status.HTTP_400_BAD_REQUEST, 'q invalid.')
+            error_msg = 'q invalid.'
+            return api_error(status.HTTP_400_BAD_REQUEST, error_msg)
 
-        email_list = []
+        sorted_users = []
         username = request.user.username
+        current_user_profile = AlibabaProfile.objects.get_profile(username)
+        if not current_user_profile:
+            # users.query
+            users = AlibabaProfile.objects.filter(work_status='A').filter(
+                    Q(emp_name__icontains=q) | Q(pinyin_name=q) | Q(work_no=q) | \
+                    Q(nick_name__icontains=q) | Q(pinyin_nick=q)).order_by('dept_name')
 
-        if self._can_use_global_address_book(request):
-            # check user permission according to user's role(default, guest, etc.)
-            # if current user can use global address book
-            if CLOUD_MODE:
-                if is_org_context(request):
-
-                    # get all org users
-                    url_prefix = request.user.org.url_prefix
-                    try:
-                        all_org_users = ccnet_api.get_org_users_by_url_prefix(url_prefix, -1, -1)
-                    except Exception as e:
-                        logger.error(e)
-                        error_msg = 'Internal Server Error'
-                        return api_error(status.HTTP_500_INTERNAL_SERVER_ERROR, error_msg)
-
-                    limited_emails = []
-                    for org_user in all_org_users:
-                        # prepare limited emails for search from profile
-                        limited_emails.append(org_user.email)
-
-                        # search user from org users
-                        if q in org_user.email:
-                            email_list.append(org_user.email)
-
-                    # search from profile, limit search range in all org users
-                    email_list += search_user_from_profile_with_limits(q, limited_emails)
-
-                elif ENABLE_GLOBAL_ADDRESSBOOK:
-                    # search from ccnet
-                    email_list += search_user_from_ccnet(q)
-
-                    # search from profile, NOT limit search range
-                    email_list += search_user_from_profile(q)
-                else:
-                    # in cloud mode, user will be added to Contact when share repo
-                    # search user from user's contacts
-                    email_list += search_user_when_global_address_book_disabled(request, q)
-            else:
-                # not CLOUD_MODE
-                # search from ccnet
-                email_list += search_user_from_ccnet(q)
-
-                # search from profile, NOT limit search range
-                email_list += search_user_from_profile(q)
+            sorted_users = sorted(users,
+                    key=lambda user: len(user.dept_name.split('-')), reverse=True)
         else:
-            # if current user can NOT use global address book,
-            # he/she can also search `q` from Contact,
-            # search user from user's contacts
-            email_list += search_user_when_global_address_book_disabled(request, q)
+            users = AlibabaProfile.objects.filter(work_status='A').filter(
+                    Q(emp_name__icontains=q) | Q(pinyin_name=q) | Q(work_no=q) | \
+                    Q(nick_name__icontains=q) | Q(pinyin_nick=q))
 
-        ## search finished, now filter out some users
+            # current user's dept is "A-B-C-D"
+            current_user_dept_name = current_user_profile.dept_name
 
-        # remove duplicate emails
-        email_list = {}.fromkeys(email_list).keys()
+            # [u'A', u'A-B', u'A-B-C', u'A-B-C-D']
+            current_user_dept_name_structure = []
+            for idx, val in enumerate(current_user_dept_name.split('-')):
+                if idx == 0:
+                    current_user_dept_name_structure.append(val)
+                else:
+                    current_user_dept_name_structure.append(
+                            current_user_dept_name_structure[-1] + '-' + val)
 
-        email_result = []
-        # remove nonexistent or inactive user
-        for email in email_list:
-            try:
-                user = User.objects.get(email=email)
-                if user.is_active:
-                    email_result.append(email)
-            except User.DoesNotExist:
+            for item in reversed(current_user_dept_name_structure):
+
+                dept_match_list = []
+                for user in users:
+                    if user in sorted_users:
+                        continue
+
+                    user_dept_name = user.dept_name
+                    if user_dept_name.startswith(item):
+                        dept_match_list.append(user)
+
+                dept_match_list = sorted(dept_match_list,
+                        key=lambda user: len(user.dept_name.split('-')))
+
+                sorted_users.extend(dept_match_list)
+
+            dept_unmatch_list = []
+            for user in users:
+                if user not in sorted_users:
+                    dept_unmatch_list.append(user)
+
+            dept_unmatch_list = sorted(dept_unmatch_list,
+                    key=lambda user: len(user.dept_name.split('-')))
+            sorted_users.extend(dept_unmatch_list)
+
+        result = []
+        for user in sorted_users:
+
+            if user.uid == username:
                 continue
 
-        if django_settings.ENABLE_ADDRESSBOOK_OPT_IN:
-            # get users who has setted to show in address book
-            listed_users = Profile.objects.filter(list_in_address_book=True).values('user')
-            listed_user_list = [ u['user'] for u in listed_users ]
+            user_info = {}
+            user_info['uid'] = user.uid
+            user_info['personal_photo_url'] = user.personal_photo_url or ''
+            user_info['emp_name'] = user.emp_name or ''
+            user_info['nick_name'] = user.nick_name or ''
+            user_info['work_no'] = user.work_no or ''
 
-            email_result = list(set(email_result) & set(listed_user_list))
+            if request.LANGUAGE_CODE == 'zh-cn':
+                user_info['post_name'] = user.post_name or ''
+                user_info['dept_name'] = user.dept_name or ''
+            else:
+                user_info['post_name'] = user.post_name_en or ''
+                user_info['dept_name'] = user.dept_name_en or ''
 
-        # check if include myself in user result
-        try:
-            include_self = int(request.GET.get('include_self', 1))
-        except ValueError:
-            include_self = 1
+            result.append(user_info)
 
-        if include_self == 0 and username in email_result:
-            # reomve myself
-            email_result.remove(username)
+        return Response({"users": result})
 
-        if CUSTOM_SEARCH_USER:
-            email_result = custom_search_user(request, email_result)
-
-        # format user result
-        try:
-            size = int(request.GET.get('avatar_size', 32))
-        except ValueError:
-            size = 32
-
-        formated_result = format_searched_user_result(
-                request, email_result[:10], size)
-
-        return Response({"users": formated_result})
 
 def format_searched_user_result(request, users, size):
     results = []

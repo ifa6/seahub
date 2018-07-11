@@ -23,6 +23,8 @@ from seahub.utils import is_ldap_user
 from seahub.utils.two_factor_auth import has_two_factor_auth
 from seahub.views import get_owned_repo_list
 
+from seahub.alibaba.models import AlibabaProfile
+
 @login_required
 def edit_profile(request):
     """
@@ -41,96 +43,38 @@ def edit_profile(request):
         else:
             messages.error(request, _(u'Failed to edit profile'))
     else:
-        profile = Profile.objects.get_profile_by_user(username)
-        d_profile = DetailedProfile.objects.get_detailed_profile_by_user(
-            username)
-
+        profile = AlibabaProfile.objects.get_profile(username)
         init_dict = {}
         if profile:
-            init_dict['nickname'] = profile.nickname
-            init_dict['login_id'] = profile.login_id
-            init_dict['contact_email'] = profile.contact_email
-            init_dict['list_in_address_book'] = profile.list_in_address_book
-        if d_profile:
-            init_dict['department'] = d_profile.department
-            init_dict['telephone'] = d_profile.telephone
+            init_dict['personal_photo_url'] = profile.personal_photo_url or ''
+            init_dict['emp_name'] = profile.emp_name or ''
+            init_dict['nick_name'] = profile.nick_name or ''
+            init_dict['post_name'] = profile.post_name or ''
+            init_dict['post_name_en'] = profile.post_name_en or ''
+            init_dict['dept_name'] = profile.dept_name or ''
+            init_dict['dept_name_en'] = profile.dept_name_en or ''
 
-        form = form_class(init_dict)
-
-    # common logic
-    try:
-        server_crypto = UserOptions.objects.is_server_crypto(username)
-    except CryptoOptionNotSetError:
-        # Assume server_crypto is ``False`` if this option is not set.
-        server_crypto = False
-
-    sub_lib_enabled = UserOptions.objects.is_sub_lib_enabled(username)
-
-    default_repo_id = UserOptions.objects.get_default_repo(username)
-    if default_repo_id:
-        default_repo = seafile_api.get_repo(default_repo_id)
-    else:
-        default_repo = None
-
-    owned_repos = get_owned_repo_list(request)
-    owned_repos = filter(lambda r: not r.is_virtual, owned_repos)
-
-    resp_dict = {
-            'form': form,
-            'server_crypto': server_crypto,
-            "sub_lib_enabled": sub_lib_enabled,
-            'ENABLE_ADDRESSBOOK_OPT_IN': settings.ENABLE_ADDRESSBOOK_OPT_IN,
-            'default_repo': default_repo,
-            'owned_repos': owned_repos,
-            'is_pro': is_pro_version(),
-            'is_ldap_user': is_ldap_user(request.user),
-            'two_factor_auth_enabled': has_two_factor_auth(),
-            'ENABLE_CHANGE_PASSWORD': settings.ENABLE_CHANGE_PASSWORD,
-    }
-
-    if has_two_factor_auth():
-        from seahub.two_factor.models import StaticDevice, default_device
-
-        try:
-            backup_tokens = StaticDevice.objects.get(
-                user=request.user.username).token_set.count()
-        except StaticDevice.DoesNotExist:
-            backup_tokens = 0
-
-        resp_dict['default_device'] = default_device(request.user)
-        resp_dict['backup_tokens'] = backup_tokens
-
-    return render(request, 'profile/set_profile.html', resp_dict)
+    return render(request, 'profile/set_profile.html', init_dict)
 
 @login_required
 def user_profile(request, username):
-    if is_valid_username(username):
-        try:
-            user = User.objects.get(email=username)
-        except User.DoesNotExist:
-            user = None
-    else:
-        user = None
 
-    if user is not None:
-        nickname = email2nickname(user.username)
-        contact_email = Profile.objects.get_contact_email_by_user(user.username)
-        d_profile = DetailedProfile.objects.get_detailed_profile_by_user(
-            user.username)
-    else:
-        nickname = ''
-        contact_email = ''
-        d_profile = None
+    profile = AlibabaProfile.objects.get_profile(username)
+    init_dict = {}
+    if profile:
+        init_dict['personal_photo_url'] = profile.personal_photo_url or ''
+        init_dict['emp_name'] = profile.emp_name or ''
+        init_dict['nick_name'] = profile.nick_name or ''
+        init_dict['post_name'] = profile.post_name or ''
+        init_dict['post_name_en'] = profile.post_name_en or ''
+        init_dict['dept_name'] = profile.dept_name or ''
+        init_dict['dept_name_en'] = profile.dept_name_en or ''
 
-    return render(request, 'profile/user_profile.html', {
-            'user': user,
-            'nickname': nickname,
-            'contact_email': contact_email,
-            'd_profile': d_profile,
-            })
+    return render(request, 'profile/user_profile.html', init_dict)
 
 @login_required
 def get_user_profile(request, user):
+
     data = {
             'email': user,
             'user_nickname': '',

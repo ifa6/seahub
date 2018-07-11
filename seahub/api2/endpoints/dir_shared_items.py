@@ -22,7 +22,6 @@ from seahub.api2.utils import api_error
 from seahub.api2.endpoints.utils import is_org_user
 
 from seahub.base.templatetags.seahub_tags import email2nickname
-from seahub.base.accounts import User
 from seahub.group.utils import is_group_member
 from seahub.share.models import ExtraSharePermission, ExtraGroupsSharePermission
 from seahub.share.utils import is_repo_admin, share_dir_to_user, \
@@ -231,11 +230,6 @@ class DirSharedItemsEndpoint(APIView):
             if shared_to is None or not is_valid_username(shared_to):
                 return api_error(status.HTTP_400_BAD_REQUEST, 'Email %s invalid.' % shared_to)
 
-            try:
-                User.objects.get(email=shared_to)
-            except User.DoesNotExist:
-                return api_error(status.HTTP_400_BAD_REQUEST, 'Invalid user, should be registered')
-
             if is_org_context(request):
                 # when calling seafile API to share authority related functions, change the uesrname to repo owner.
                 repo_owner = seafile_api.get_org_repo_owner(repo_id)
@@ -313,15 +307,6 @@ class DirSharedItemsEndpoint(APIView):
                     result['failed'].append({
                         'email': to_user,
                         'error_msg': _(u'username invalid.')
-                        })
-                    continue
-
-                try:
-                    User.objects.get(email=to_user)
-                except User.DoesNotExist:
-                    result['failed'].append({
-                        'email': to_user,
-                        'error_msg': _(u'User %s not found.') % to_user
                         })
                     continue
 

@@ -5,27 +5,35 @@
 {% block header_css_class %}d-flex{% endblock %}
 
 {% block main_panel %}
-<div id="user-profile">
-{% if user %}
-    {% avatar user.username 64 %}
-    <p title="{{ nickname }}" class="user-profile-nickname ellipsis">{{ nickname }}</p>
-    <ul>
-        {% if d_profile %}
-        {% if d_profile.telephone %}
-        <li title="{{ d_profile.telephone }}" class="user-profile-info ellipsis">
-            <span class="user-profile-info-icon icon-phone fa-1x vam"></span>
-            <span class="vam">{{ d_profile.telephone }}</span>
-        </li>
-        {% endif %}
-        {% endif %}
-        <li title="{{ contact_email }}" class="user-profile-info ellipsis">
-            <span class="user-profile-info-icon icon-envelope fa-1x vam"></span>
-            <span class="vam">{{ contact_email }}</span>
-        </li>
-    </ul>
 
-{% else %}
-    {% avatar "" 64 %}
-{% endif %}
+<div id="user-profile">
+
+<img src="{{ personal_photo_url }}" title="{{ emp_name|escapejs }}" width="64" height="64" class="avatar">
+
+<p title="{{ emp_name|escapejs }}" class="user-profile-nickname ellipsis">{{ emp_name|escapejs }}</p>
+<p title="{{ nick_name|escapejs }}" class="user-profile-nickname ellipsis">{{ nick_name|escapejs }}</p>
+
+<ul>
+    {% if request.LANGUAGE_CODE == 'zh-cn' %}
+    <li title="{{ post_name|escapejs }}" class="user-profile-info ellipsis">
+        <span class="user-profile-info-icon icon-building fa-1x vam"></span>
+        <span class="vam">{{ post_name|escapejs }}</span>
+    </li>
+    <li title="{{ dept_name|escapejs }}" class="user-profile-info ellipsis">
+        <span class="user-profile-info-icon icon-building fa-1x vam"></span>
+        <span class="vam">{{ dept_name|escapejs }}</span>
+    </li>
+    {% else %}
+    <li title="{{ post_name_en|escapejs }}" class="user-profile-info ellipsis">
+        <span class="user-profile-info-icon icon-building fa-1x vam"></span>
+        <span class="vam">{{ post_name_en|escapejs }}</span>
+    </li>
+    <li title="{{ dept_name_en|escapejs }}" class="user-profile-info ellipsis">
+        <span class="user-profile-info-icon icon-building fa-1x vam"></span>
+        <span class="vam">{{ dept_name_en|escapejs }}</span>
+    </li>
+    {% endif %}
+</ul>
 </div>
+
 {% endblock %}
