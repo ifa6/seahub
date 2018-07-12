@@ -113,6 +113,8 @@ from seahub.api2.endpoints.admin.address_book.groups import AdminAddressBookGrou
 from seahub.api2.endpoints.admin.group_owned_libraries import AdminGroupOwnedLibraries, \
         AdminGroupOwnedLibrary
 
+from seahub.alibaba.views import alibaba_client_download_view
+
 urlpatterns = [
     url(r'^accounts/', include('seahub.base.registration_urls')),
 
@@ -177,7 +179,7 @@ urlpatterns = [
     url(r'^i18n/$', i18n, name='i18n'),
     url(r'^convert_cmmt_desc_link/$', convert_cmmt_desc_link, name='convert_cmmt_desc_link'),
     url(r'^modules/toggle/$', toggle_modules, name="toggle_modules"),
-    url(r'^download_client_program/$', TemplateView.as_view(template_name="download.html"), name="download_client"),
+    url(r'^download_client_program/$', alibaba_client_download_view, name="download_client"),
     url(r'^choose_register/$', choose_register, name="choose_register"),
 
     ### Ajax ###

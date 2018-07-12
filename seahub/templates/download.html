@@ -6,14 +6,77 @@
 {% block extra_style %}
 <style type="text/css">
 #main p { font-size:14px; }
+.software h2 {
+    margin-top:20px;
+    line-height:1.8;
+    font-weight:normal;
+    font-size:1.4em;
+    border-bottom: 1px solid #d8d8d8;
+}
+.software h3 {
+    margin:6px 0 0;
+}
+.software .row {
+    margin-top:40px;
+    margin-bottom:40px;
+}
+.software .txt {
+    margin-top:-40px;
+    margin-left:50px;
+}
+.software .download-op {
+    font-size:15px;
+}
+.software .support-version {
+    margin-bottom:0.1rem;
+}
 </style>
 {% endblock %}
 
 {% block wide_page_content %}
-    {% if LANGUAGE_CODE == 'zh-cn' %}
-    <p>你可以从 Seafile 的<a href="http://seafile.com/download/">官方下载页面</a>下载 Windows，Mac 以及 Linux 的客户端。</p>
+
+<div class="software container">
+    {% if LANGUAGE_CODE == 'zh-cn' or LANGUAGE_CODE == 'zh-tw' %}
+    <h2>桌面同步客户端</h2>
+    <div class="row">
+        <div class="col-md-5 col-md-offset-1">
+            <img src="{{MEDIA_URL}}img/windows.png" alt="" class="pic" />
+            <div class="txt">
+                <h3>Windows客户端</h3>
+                <p class="support-version">可运行于 Windows 7/8/10</p>
+                <a href="{{ windows_client_public_download_url }}" class="download-op">{{ apple_client_version }}</a><br/>
+            </div>
+        </div>
+        <div class="col-md-5 col-md-offset-1">
+            <img src="{{MEDIA_URL}}img/apple.png" alt="" class="pic" />
+            <div class="txt">
+                <h3>Mac 客户端</h3>
+                <p class="support-version">支持 Mac OS X 10.7+</p>
+                <a href="{{ apple_client_public_download_url }}" class="download-op">{{ apple_client_version }}</a><br/>
+            </div>
+        </div>
+    </div>
     {% else %}
-    <p>You can download Seafile desktop client for Windows, Mac and Linux from Seafile's <a href="http://seafile.com/en/download/">official download page</a>.</p>
+    <h2>Desktop Syncing Clients</h2>
+    <div class="row">
+        <div class="col-md-5 col-md-offset-1">
+            <img src="{{MEDIA_URL}}img/windows.png" alt="" class="pic" />
+            <div class="txt">
+                <h3>Client for Windows</h3>
+                <p class="support-version">Runs on 7/8/10</p>
+                <a href="{{ windows_client_public_download_url }}" class="download-op">{{ apple_client_version }}</a><br/>
+            </div>
+        </div>
+        <div class="col-md-5 col-md-offset-1">
+            <img src="{{MEDIA_URL}}img/apple.png" alt="" class="pic" />
+            <div class="txt">
+                <h3>Client for Mac</h3>
+                <p class="support-version">Runs on Mac OS X 10.7 or abovel</p>
+                <a href="{{ apple_client_public_download_url }}" class="download-op">{{ apple_client_version }}</a><br/>
+            </div>
+        </div>
+    </div>
     {% endif %}
+</div>
 {% endblock %}
 
