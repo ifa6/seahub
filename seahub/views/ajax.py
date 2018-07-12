@@ -1388,7 +1388,7 @@ def ajax_group_members_import(request, group_id):
         if not alibaba_profile or not alibaba_profile.uid:
             result['failed'].append({
                 'email': work_no,
-                'error_msg': '工号没找到。' if is_cn else 'Work number not found.'
+                'error_msg': '工号没找到。' if is_cn else 'Employee ID not found.'
                 })
             continue
 
