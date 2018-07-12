@@ -65,6 +65,7 @@ def user_profile(request, username):
         init_dict['personal_photo_url'] = profile.personal_photo_url or ''
         init_dict['emp_name'] = profile.emp_name or ''
         init_dict['nick_name'] = profile.nick_name or ''
+        init_dict['work_no'] = profile.work_no or ''
         init_dict['post_name'] = profile.post_name or ''
         init_dict['post_name_en'] = profile.post_name_en or ''
         init_dict['dept_name'] = profile.dept_name or ''

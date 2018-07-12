@@ -14,22 +14,24 @@
 <p title="{{ nick_name }}" class="user-profile-nickname ellipsis">{{ nick_name }}</p>
 
 <ul>
+    <li title="{{ work_no }}" class="user-profile-info ellipsis">
+        <span class="vam">{{ work_no }}</span>
+    </li>
+
     {% if request.LANGUAGE_CODE == 'zh-cn' or request.LANGUAGE_CODE == 'zh-tw' %}
+
     <li title="{{ post_name }}" class="user-profile-info ellipsis">
-        <span class="user-profile-info-icon icon-building fa-1x vam"></span>
         <span class="vam">{{ post_name }}</span>
     </li>
     <li title="{{ dept_name }}" class="user-profile-info ellipsis">
-        <span class="user-profile-info-icon icon-building fa-1x vam"></span>
         <span class="vam">{{ dept_name }}</span>
     </li>
+
     {% else %}
     <li title="{{ post_name_en }}" class="user-profile-info ellipsis">
-        <span class="user-profile-info-icon icon-building fa-1x vam"></span>
         <span class="vam">{{ post_name_en }}</span>
     </li>
     <li title="{{ dept_name_en }}" class="user-profile-info ellipsis">
-        <span class="user-profile-info-icon icon-building fa-1x vam"></span>
         <span class="vam">{{ dept_name_en }}</span>
     </li>
     {% endif %}
