@@ -1309,46 +1309,35 @@ def ajax_group_members_import(request, group_id):
     """Import users to group.
 
     Permission checking:
-    1. Only group admin can add import group members
+    1. Only group admin/owner can add import group members
     """
 
     result = {}
     username = request.user.username
     content_type = 'application/json; charset=utf-8'
 
-    # get and convert uploaded file
+    # argument check
     uploaded_file = request.FILES['file']
-    ext = os.path.splitext(uploaded_file.name)[1].lower()
-    if ext != '.csv':
-        result['error'] = file_type_error_msg(ext, "csv")
+    if not uploaded_file:
+        result['error'] = _('Argument missing')
         return HttpResponse(json.dumps(result), status=400,
                         content_type=content_type)
 
-    if uploaded_file.size > 10 * 1024 * 1024:
-        result['error'] = file_size_error_msg(uploaded_file.size, 10 * 1024 * 1024)
-        return HttpResponse(json.dumps(result), status=400,
-                        content_type=content_type)
-
+    # recourse check
     group_id = int(group_id)
-    try:
-        group = seaserv.get_group(group_id)
-
-        if not group:
-            result['error'] = 'Group %s not found.' % group_id
-            return HttpResponse(json.dumps(result), status=404,
-                            content_type=content_type)
-        # check permission
-        if not is_group_admin_or_owner(group_id, username):
-            result['error'] = 'Permission denied.'
-            return HttpResponse(json.dumps(result), status=403,
-                            content_type=content_type)
-
-    except SearpcError as e:
-        logger.error(e)
-        result['error'] = 'Internal Server Error'
-        return HttpResponse(json.dumps(result), status=500,
+    group = ccnet_api.get_group(group_id)
+    if not group:
+        result['error'] = _('Group does not exist')
+        return HttpResponse(json.dumps(result), status=404,
                         content_type=content_type)
 
+    # check permission
+    if not is_group_admin_or_owner(group_id, username):
+        result['error'] = _('Permission denied.')
+        return HttpResponse(json.dumps(result), status=403,
+                        content_type=content_type)
+
+    # prepare work no list from uploaded file
     try:
         content = uploaded_file.read()
         encoding = chardet.detect(content)['encoding']
@@ -1359,69 +1348,68 @@ def ajax_group_members_import(request, group_id):
         reader = csv.reader(filestream)
     except Exception as e:
         logger.error(e)
-        result['error'] = 'Internal Server Error'
+        result['error'] = _('Internal Server Error')
         return HttpResponse(json.dumps(result), status=500,
                         content_type=content_type)
 
-    # prepare email list from uploaded file
-    emails_list = []
+    work_no_list = []
     for row in reader:
         if not row:
             continue
+        work_no = row[0].strip().lower()
+        work_no_list.append(work_no)
 
-        email = row[0].strip().lower()
-        emails_list.append(email)
+    def alibaba_get_group_member_info(group_id, alibaba_profile):
+        emp_name = alibaba_profile.emp_name
+        nick_name = alibaba_profile.nick_name
+        if nick_name:
+            emp_nick_name = '%s(%s)' % (emp_name, nick_name)
+        else:
+            emp_nick_name = emp_name
 
-    org_id = None
-    if is_org_context(request):
-        org_id = request.user.org.org_id
+        member_info = {
+            'group_id': group_id,
+            "name": emp_nick_name,
+            'email': alibaba_profile.uid,
+            "avatar_url": alibaba_profile.personal_photo_url or '',
+        }
+        return member_info
+
+    from seahub.alibaba.models import AlibabaProfile
+    is_cn = request.LANGUAGE_CODE in ('zh-cn', 'zh-tw')
 
     result = {}
     result['failed'] = []
     result['success'] = []
-    emails_need_add = []
 
-    # check email validation
-    for email in emails_list:
+    # check work_no validation
+    for work_no in work_no_list:
+        alibaba_profile = AlibabaProfile.objects.get_profile_by_work_no(work_no)
+        if not alibaba_profile or not alibaba_profile.uid:
+            result['failed'].append({
+                'email': work_no,
+                'error_msg': '工号没找到。' if is_cn else 'Work number not found.'
+                })
+            continue
+
+        ccnet_email = alibaba_profile.uid
+        if is_group_member(group_id, ccnet_email, in_structure=False):
+            result['failed'].append({
+                'email': work_no,
+                'error_msg': '已经是群组成员。' if is_cn else 'Is already a group member.'
+                })
+            continue
+
         try:
-            User.objects.get(email=email)
-        except User.DoesNotExist:
-            result['failed'].append({
-                'email': email,
-                'error_msg': 'User %s not found.' % email
-                })
-            continue
-
-        if is_group_member(group_id, email, in_structure=False):
-            result['failed'].append({
-                'email': email,
-                'error_msg': _(u'User %s is already a group member.') % email
-                })
-            continue
-
-        # Can only invite organization users to group
-        if org_id and not \
-            seaserv.ccnet_threaded_rpc.org_user_exists(org_id, email):
-            result['failed'].append({
-                'email': email,
-                'error_msg': _(u'User %s not found in organization.') % email
-                })
-            continue
-
-        emails_need_add.append(email)
-
-    # Add email to group.
-    for email in emails_need_add:
-        try:
-            seaserv.ccnet_threaded_rpc.group_add_member(group_id,
-                username, email)
-            member_info = get_group_member_info(request, group_id, email)
+            ccnet_api.group_add_member(group_id, username, ccnet_email)
+            member_info = alibaba_get_group_member_info(group_id,
+                    alibaba_profile)
             result['success'].append(member_info)
         except SearpcError as e:
             logger.error(e)
             result['failed'].append({
-                'email': email,
-                'error_msg': 'Internal Server Error'
+                'email': work_no,
+                'error_msg': _('Internal Server Error')
                 })
 
     return HttpResponse(json.dumps(result), content_type=content_type)
