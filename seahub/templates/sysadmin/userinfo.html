@@ -58,7 +58,11 @@
             <dt>{% trans "Department" %}</dt>
             <dd>
                 <span id="department">
+                  {% if LANGUAGE_CODE == 'zh-cn' %}
                   {{ ali_profile.dept_name }}
+                  {% else %}
+                  {{ ali_profile.dept_name_en }}
+                  {% endif %}
                 </span>
             </dd>
 

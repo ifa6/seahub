@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 register = template.Library()
 
-@cache_result
+# @cache_result
 @register.simple_tag
 def avatar_url(user, size=AVATAR_DEFAULT_SIZE):
     return get_alibaba_user_avatar_url(user)
@@ -42,7 +42,7 @@ def avatar_url(user, size=AVATAR_DEFAULT_SIZE):
     #     else:
     #         return get_default_avatar_url()
 
-@cache_result
+# @cache_result
 def api_avatar_url(user, size=AVATAR_DEFAULT_SIZE):
     return get_alibaba_user_avatar_url(user), True, None
     # avatar = get_primary_avatar(user, size=size)

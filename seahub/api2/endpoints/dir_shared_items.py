@@ -370,11 +370,19 @@ class DirSharedItemsEndpoint(APIView):
 
                         share_dir_to_user(repo, path, repo_owner, username, to_user, permission, None)
 
+                    if translation.get_language() != 'zh-cn':
+                        use_en = True
+                    else:
+                        use_en = False
+                    ali_p = AlibabaProfile.objects.get_profile(to_user)
                     result['success'].append({
                         "share_type": "user",
                         "user_info": {
                             "name": to_user,
                             "nickname": email2nickname(to_user),
+                            "work_no": ali_p.work_no,
+                            "post_name": ali_p.post_name_en if use_en else ali_p.post_name,
+                            "department": ali_p.dept_name_en if use_en else ali_p.dept_name,
                         },
                         "permission": PERMISSION_READ_WRITE if permission == PERMISSION_ADMIN else permission,
                         "is_admin": permission == PERMISSION_ADMIN
