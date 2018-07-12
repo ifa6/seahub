@@ -8,29 +8,29 @@
 
 <div id="user-profile">
 
-<img src="{{ personal_photo_url }}" title="{{ emp_name|escapejs }}" width="64" height="64" class="avatar">
+<img src="{{ personal_photo_url }}" title="{{ emp_name }}" width="64" height="64" class="avatar">
 
-<p title="{{ emp_name|escapejs }}" class="user-profile-nickname ellipsis">{{ emp_name|escapejs }}</p>
-<p title="{{ nick_name|escapejs }}" class="user-profile-nickname ellipsis">{{ nick_name|escapejs }}</p>
+<p title="{{ emp_name }}" class="user-profile-nickname ellipsis">{{ emp_name }}</p>
+<p title="{{ nick_name }}" class="user-profile-nickname ellipsis">{{ nick_name }}</p>
 
 <ul>
-    {% if request.LANGUAGE_CODE == 'zh-cn' %}
-    <li title="{{ post_name|escapejs }}" class="user-profile-info ellipsis">
+    {% if request.LANGUAGE_CODE == 'zh-cn' or request.LANGUAGE_CODE == 'zh-tw' %}
+    <li title="{{ post_name }}" class="user-profile-info ellipsis">
         <span class="user-profile-info-icon icon-building fa-1x vam"></span>
-        <span class="vam">{{ post_name|escapejs }}</span>
+        <span class="vam">{{ post_name }}</span>
     </li>
-    <li title="{{ dept_name|escapejs }}" class="user-profile-info ellipsis">
+    <li title="{{ dept_name }}" class="user-profile-info ellipsis">
         <span class="user-profile-info-icon icon-building fa-1x vam"></span>
-        <span class="vam">{{ dept_name|escapejs }}</span>
+        <span class="vam">{{ dept_name }}</span>
     </li>
     {% else %}
-    <li title="{{ post_name_en|escapejs }}" class="user-profile-info ellipsis">
+    <li title="{{ post_name_en }}" class="user-profile-info ellipsis">
         <span class="user-profile-info-icon icon-building fa-1x vam"></span>
-        <span class="vam">{{ post_name_en|escapejs }}</span>
+        <span class="vam">{{ post_name_en }}</span>
     </li>
-    <li title="{{ dept_name_en|escapejs }}" class="user-profile-info ellipsis">
+    <li title="{{ dept_name_en }}" class="user-profile-info ellipsis">
         <span class="user-profile-info-icon icon-building fa-1x vam"></span>
-        <span class="vam">{{ dept_name_en|escapejs }}</span>
+        <span class="vam">{{ dept_name_en }}</span>
     </li>
     {% endif %}
 </ul>
