@@ -707,7 +707,7 @@
         <img src="<%= icon_url %>" width="24" alt="" />
         <% } %>
 
-        <% if (is_pro && dirent.is_locked) { %>
+        <% if (is_pro && dirent.is_locked && (dirent.lock_owner != 'OnlineOffice') ) { %>
         <img class="file-locked-icon" width="16" src="{{ MEDIA_URL }}img/file-locked-32.png" alt="{% trans "locked" %}" />
         <% } %>
         </div>
@@ -921,7 +921,7 @@
             <img src="<%= icon_url %>" width="96" alt="" class="vam" />
         <% } %>
 
-        <% if (is_pro && dirent.is_locked) { %>
+        <% if (is_pro && dirent.is_locked && (dirent.lock_owner != 'OnlineOffice') ) { %>
         <img class="grid-file-locked-icon" width="16" src="{{ MEDIA_URL }}img/file-locked-32.png" alt="{% trans "locked" %}" />
         <% } %>
     </a>
