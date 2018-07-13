@@ -64,11 +64,7 @@ def client_sso(request, uuid):
         logger.error('%s is not safe url.' % next_page)
         next_page = reverse('client_sso_complete', args=[uuid, ])
 
-    if request.user.is_anonymous():
-        redirect_url = reverse('saml2_login') + '?next=' + next_page
-    else:
-        redirect_url = next_page
-
+    redirect_url = reverse('saml2_login') + '?next=' + next_page
     return HttpResponseRedirect(redirect_url)
 
 @login_required
@@ -101,6 +97,12 @@ def client_sso_complete(request, uuid):
         t.completed(email=username, api_key=api_token.key)
         logger.info('Client SSO success, uuid: %s, user: %s' % (uuid, username))
 
+        from seahub.alibaba.utils import update_user_avatar
+        try:
+            update_user_avatar(request)
+        except Exception as e:
+            logger.error(e)
+            pass
     else:
         logger.warn('Client SSO token is not waiting, skip.')
 
