@@ -18,7 +18,11 @@ $('.repo-transfer-btn').on('click', function(){
         multiple: true, // to keep the same UI with the others
         width: '268px',
         maximumSelectionLength: 1,
-        placeholder: "{% trans "Search user or enter email and press Enter" %}"
+        {% if request.LANGUAGE_CODE == 'zh-cn' or request.LANGUAGE_CODE == 'zh-tw' %}
+        placeholder: "工号、姓名或者花名",
+        {% else %}
+        placeholder: "Employee ID, employee name or nick name",
+        {% endif %}
     }, userInputOPtionsForSelect2('{% url 'search-user' %}')));
 
     $('input[name="repo_id"]', form).val(repo_id);
