@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 # This is an auto-generated Django model module.
 # You'll have to do the following manually to clean this up:
 #   * Rearrange models' order
@@ -8,10 +10,16 @@
 from __future__ import unicode_literals
 
 import json
+import uuid
 
 from django.db import models
 
-ALIBABA_MESSAGE_QUEUE_TOPIC = '01-push_message'
+try:
+    from seahub.settings import ALIBABA_MESSAGE_TOPIC_NOTICE, \
+            ALIBABA_DINGDING_TALK_URL
+except ImportError:
+    ALIBABA_MESSAGE_TOPIC_NOTICE = '01_push_message'
+    ALIBABA_DINGDING_TALK_URL = "dingtalk://dingtalkclient/page/link?url=%s&pc_slide=false"
 
 class AlibabaProfileManager(models.Manager):
 
@@ -55,31 +63,27 @@ class AlibabaProfile(models.Model):
         managed = False
         db_table = 'alibaba_profile'
 
+
 class AlibabaMessageQueueManager(models.Manager):
 
-    def add_dingding_markdown_message(self, dingding_msg_title,
-            dingding_msg_text, to_work_no_list):
+    def add_dingding_message(self, alibaba_message_topic,
+            content_cn, content_en, to_work_no_list):
 
-        dingding_msg = {
-            "msgtype": "markdown",
-            "markdown": {
-                "title": dingding_msg_title,
-                "text": dingding_msg_text
-            }
-        }
-
-        alibaba_message_body = {
+        message_body = {
             "pushType": "dingding",
-            "content": dingding_msg,
+            "contentCN": content_cn,
+            "contentEN": content_en,
             "pushWorkNos": to_work_no_list
         }
 
-        AlibabaMessageQueue.objects.add_message(ALIBABA_MESSAGE_QUEUE_TOPIC,
-                json.dumps(alibaba_message_body))
+        message_body_json = json.dumps(message_body,
+                ensure_ascii=False, encoding='utf8')
 
-    def add_message(self, topic, message_body):
+        message = self.model(topic=alibaba_message_topic,
+                message_body=message_body_json,
+                lock_version=0, is_consumed=0,
+                message_key=uuid.uuid4())
 
-        message = self.model(topic=topic, message_body=message_body, lock_version=0)
         message.save(using=self._db)
         return message
 

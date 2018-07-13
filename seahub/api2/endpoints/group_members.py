@@ -315,4 +315,8 @@ class GroupMembersBulk(APIView):
                     'error_msg': 'Internal Server Error'
                     })
 
+            add_user_to_group.send(sender=None,
+                                   group_staff=username,
+                                   group_id=group_id,
+                                   added_user=email)
         return Response(result)

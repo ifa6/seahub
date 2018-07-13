@@ -4,6 +4,7 @@ import datetime
 import os
 import json
 import logging
+import urlparse
 
 from django.db import models
 from django.conf import settings
@@ -12,6 +13,7 @@ from django.utils.html import escape
 from django.utils.translation import ugettext as _
 from django.core.cache import cache
 from django.template.loader import render_to_string
+from django.core.urlresolvers import reverse
 
 import seaserv
 from seaserv import seafile_api, ccnet_api
@@ -22,6 +24,7 @@ from seahub.invitations.models import Invitation
 from seahub.utils.repo import get_repo_shared_users
 from seahub.utils import normalize_cache_key
 from seahub.constants import HASH_URLS
+from seahub.utils import get_site_scheme_and_netloc
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -754,7 +757,6 @@ class UserNotification(models.Model):
 
 
 ########## handle signals
-from django.core.urlresolvers import reverse
 from django.dispatch import receiver
 
 from seahub.signals import upload_file_successful, comment_file_successful
@@ -762,6 +764,8 @@ from seahub.group.signals import grpmsg_added, group_join_request, add_user_to_g
 from seahub.share.signals import share_repo_to_user_successful, \
     share_repo_to_group_successful
 from seahub.invitations.signals import accept_guest_invitation_successful
+from seahub.alibaba.models import AlibabaMessageQueue, AlibabaProfile, \
+        ALIBABA_MESSAGE_TOPIC_NOTICE, ALIBABA_DINGDING_TALK_URL
 
 @receiver(upload_file_successful)
 def add_upload_file_msg_cb(sender, **kwargs):
@@ -794,6 +798,85 @@ def add_share_repo_msg_cb(sender, **kwargs):
     detail = repo_share_msg_to_json(from_user, repo.id, path, org_id)
     UserNotification.objects.add_repo_share_msg(to_user, detail)
 
+    # for alibaba
+    from_profile = AlibabaProfile.objects.get_profile(from_user)
+    to_profile = AlibabaProfile.objects.get_profile(to_user)
+
+    if not from_profile or not to_profile:
+        if not from_profile:
+            logger.debug('%s not found in alibaba profile table.' % from_user)
+        if not to_profile:
+            logger.debug('%s not found in alibaba profile table.' % to_user)
+    else:
+        base_url = get_site_scheme_and_netloc()
+        endpoint = '#shared-libs/lib/%s' % repo.id
+        url = urlparse.urljoin(base_url, endpoint)
+
+        ccnet_email = from_profile.uid
+
+        # Titile: 您收到一份共享资料
+        # Form:
+        # 邀请人: 姓名(花名)
+        # 资料库名称: 这是一个资料库
+        # 发起时间: 2018-07-13 13:14:12
+        # 消息系统: Alifile云文件
+        content_cn = {
+            "message_url": ALIBABA_DINGDING_TALK_URL % url,
+            "head": {"bgcolor": "FFF17334", "text": "Alifile云文件"},
+            "body": {
+                "title": "您收到一份共享资料",
+                "form": [
+                    {
+                        "key": "邀请人:",
+                        "value": email2nickname(ccnet_email)
+                    },
+                    {
+                        "key": "资料库名称:",
+                        "value": "%s" % repo.name
+                    },
+                    {
+                        "key": "系统消息:",
+                        "value": "Alifile云文件"
+                    }
+                ]
+            }
+        }
+
+        # Ttile: library is shared to you
+        # Form:
+        # Invitor: 姓名(花名)
+        # Library Name: This is a library
+        # TIme: 2018-07-13 13:14:12
+        # Message From: Alifle云文件
+        content_en = {
+            "message_url": ALIBABA_DINGDING_TALK_URL % url,
+            "head": {"bgcolor": "FFF17334", "text": "Alifile云文件"},
+            "body": {
+                "title": "One library is shared to you",
+                "form": [
+                    {
+                        "key": "Invitor:",
+                        "value": email2nickname(ccnet_email)
+                    },
+                    {
+                        "key": "Library Name:",
+                        "value": "%s" % repo.name
+                    },
+                    {
+                        "key": "Message From:",
+                        "value": "Alifile云文件"
+                    }
+                ]
+            }
+        }
+
+        to_work_no_list = []
+        to_work_no_list.append(to_profile.work_no)
+
+        AlibabaMessageQueue.objects.add_dingding_message(
+                ALIBABA_MESSAGE_TOPIC_NOTICE,
+                content_cn, content_en, to_work_no_list)
+
 @receiver(share_repo_to_group_successful)
 def add_share_repo_to_group_msg_cb(sender, **kwargs):
     """Notify group member when others share repos to group.
@@ -814,6 +897,103 @@ def add_share_repo_to_group_msg_cb(sender, **kwargs):
         detail = repo_share_to_group_msg_to_json(from_user, repo.id, group_id, path, org_id)
         UserNotification.objects.add_repo_share_to_group_msg(to_user, detail)
 
+    # for alibaba
+    from_profile = AlibabaProfile.objects.get_profile(from_user)
+    group = ccnet_api.get_group(group_id)
+    if not from_profile or not group:
+        if not from_profile:
+            logger.debug('%s not found in alibaba profile table.' % from_user)
+        if not group:
+            logger.debug('Group %s not found.' % group_id)
+    else:
+        base_url = get_site_scheme_and_netloc()
+        endpoint = '#group/%s/lib/%s' % (group.id, repo.id)
+        url = urlparse.urljoin(base_url, endpoint)
+
+        ccnet_email = from_profile.uid
+
+        # Titile: 您所在的群组收到一个资料库
+        # Form:
+        # 邀请人: 姓名(花名)
+        # 群组名称: 这是一个群组
+        # 资料库名称: 这是一个资料库
+        # 消息系统: Alifile云文件
+        content_cn = {
+            "message_url": ALIBABA_DINGDING_TALK_URL % url,
+            "head": {"bgcolor": "FFF17334", "text": "Alifile云文件"},
+            "body": {
+                "title": "您所在的群组收到一个资料库",
+                "form": [
+                    {
+                        "key": "邀请人:",
+                        "value": email2nickname(ccnet_email)
+                    },
+                    {
+                        "key": "群组名称:",
+                        "value": "%s" % group.group_name
+                    },
+                    {
+                        "key": "资料库名称:",
+                        "value": "%s" % repo.name
+                    },
+                    {
+                        "key": "系统消息:",
+                        "value": "Alifile云文件"
+                    }
+                ]
+            }
+        }
+
+        # Ttile: As you are group member, One library is shared to you
+        # Form:
+        # Invitor: 姓名(花名)
+        # Group Name: This is a group
+        # Library Name: This is a library
+        # Message From: Alifle云文件
+        content_en = {
+            "message_url": ALIBABA_DINGDING_TALK_URL % url,
+            "head": {"bgcolor": "FFF17334", "text": "Alifile云文件"},
+            "body": {
+                "title": "As you are group member, One library is shared to you",
+                "form": [
+                    {
+                        "key": "Invitor:",
+                        "value": email2nickname(ccnet_email)
+                    },
+                    {
+                        "key": "Group Name:",
+                        "value": "%s" % group.group_name
+                    },
+                    {
+                        "key": "Library Name:",
+                        "value": "%s" % repo.name
+                    },
+                    {
+                        "key": "Message From:",
+                        "value": "Alifile云文件"
+                    }
+                ]
+            }
+        }
+
+        to_work_no_list = []
+        for member in members:
+
+            to_user = member.user_name
+            if to_user == from_user:
+                continue
+
+            to_profile = AlibabaProfile.objects.get_profile(to_user)
+            if not to_profile:
+                logger.debug('%s not found in alibaba profile table.' % to_user)
+                continue
+
+            to_work_no_list.append(to_profile.work_no)
+
+        AlibabaMessageQueue.objects.add_dingding_message(
+                ALIBABA_MESSAGE_TOPIC_NOTICE,
+                content_cn, content_en, to_work_no_list)
+
 @receiver(grpmsg_added)
 def grpmsg_added_cb(sender, **kwargs):
     group_id = kwargs['group_id']
@@ -825,6 +1005,102 @@ def grpmsg_added_cb(sender, **kwargs):
 
     detail = group_msg_to_json(group_id, from_email, message)
     UserNotification.objects.bulk_add_group_msg_notices(notify_members, detail)
+
+    # for alibaba
+    from_profile = AlibabaProfile.objects.get_profile(from_email)
+    group = ccnet_api.get_group(group_id)
+    if not from_profile or not group:
+        if not from_profile:
+            logger.debug('%s not found in alibaba profile table.' % from_email)
+        if not group:
+            logger.debug('Group %s not found.' % group_id)
+    else:
+        base_url = get_site_scheme_and_netloc()
+        endpoint = '#group/%s/discussions/' % group.id
+        url = urlparse.urljoin(base_url, endpoint)
+
+        ccnet_email = from_profile.uid
+
+        # Titile: 您所在的群组有一个新的评论
+        # Form:
+        # 评论人: 姓名(花名)
+        # 群组名称: 这是一个群组
+        # 评论内容: 这是一个评论
+        # 消息系统: Alifile云文件
+        content_cn = {
+            "message_url": ALIBABA_DINGDING_TALK_URL % url,
+            "head": {"bgcolor": "FFF17334", "text": "Alifile云文件"},
+            "body": {
+                "title": "您所在的群组有一个新的评论",
+                "form": [
+                    {
+                        "key": "评论人:",
+                        "value": email2nickname(ccnet_email)
+                    },
+                    {
+                        "key": "群组名称:",
+                        "value": "%s" % group.group_name
+                    },
+                    {
+                        "key": "评论内容:",
+                        "value": "%s" % message
+                    },
+                    {
+                        "key": "系统消息:",
+                        "value": "Alifile云文件"
+                    }
+                ]
+            }
+        }
+
+        # Ttile:New comment received in your group
+        # Form:
+        # Comment From: 姓名(花名)
+        # Group Name: This is a group
+        # Comment: This is the comment
+        # Message From: Alifle云文件
+        content_en = {
+            "message_url": ALIBABA_DINGDING_TALK_URL % url,
+            "head": {"bgcolor": "FFF17334", "text": "Alifile云文件"},
+            "body": {
+                "title": "您所在的群组有一个新的评论",
+                "form": [
+                    {
+                        "key": "Comment From:",
+                        "value": email2nickname(ccnet_email)
+                    },
+                    {
+                        "key": "Group Name:",
+                        "value": "%s" % group.group_name
+                    },
+                    {
+                        "key": "Comment:",
+                        "value": "%s" % message
+                    },
+                    {
+                        "key": "Message From:",
+                        "value": "Alifile云文件"
+                    }
+                ]
+            }
+        }
+
+        to_work_no_list = []
+        for to_user in notify_members:
+
+            if to_user == from_email:
+                continue
+
+            to_profile = AlibabaProfile.objects.get_profile(to_user)
+            if not to_profile:
+                logger.debug('%s not found in alibaba profile table.' % to_user)
+                continue
+
+            to_work_no_list.append(to_profile.work_no)
+
+        AlibabaMessageQueue.objects.add_dingding_message(
+                ALIBABA_MESSAGE_TOPIC_NOTICE,
+                content_cn, content_en, to_work_no_list)
 
 @receiver(group_join_request)
 def group_join_request_cb(sender, **kwargs):
@@ -851,6 +1127,82 @@ def add_user_to_group_cb(sender, **kwargs):
     UserNotification.objects.set_add_user_to_group_notice(to_user=added_user,
                                                           detail=detail)
 
+    # for alibaba
+    from_profile = AlibabaProfile.objects.get_profile(group_staff)
+    to_profile = AlibabaProfile.objects.get_profile(added_user)
+    group = ccnet_api.get_group(group_id)
+    if not from_profile or not to_profile or not group:
+        if not from_profile:
+            logger.debug('%s not found in alibaba profile table.' % group_staff)
+        if not to_profile:
+            logger.debug('%s not found in alibaba profile table.' % added_user)
+        if not group:
+            logger.debug('Group %s not found.' % group_id)
+    else:
+        base_url = get_site_scheme_and_netloc()
+        endpoint = '#group/%s/' % group.id
+        url = urlparse.urljoin(base_url, endpoint)
+
+        ccnet_email = from_profile.uid
+
+        # Titile:您被邀请到了一个群组
+        # Form:
+        # 邀请人: 姓名(花名)
+        # 群组名称: 这是一个群组
+        # 消息系统: Alifile云文件
+        content_cn = {
+            "message_url": ALIBABA_DINGDING_TALK_URL % url,
+            "head": {"bgcolor": "FFF17334", "text": "Alifile云文件"},
+            "body": {
+                "title": "您被邀请到了一个群组",
+                "form": [
+                    {
+                        "key": "邀请人:",
+                        "value": email2nickname(ccnet_email)
+                    },
+                    {
+                        "key": "群组名称:",
+                        "value": "%s" % group.group_name
+                    },
+                    {
+                        "key": "系统消息:",
+                        "value": "Alifile云文件"
+                    }
+                ]
+            }
+        }
+        # Ttile:You are invited into a group
+        # Form:
+        # Invitor: 姓名(花名)
+        # Group Name: This is a group
+        # Message From: Alifle云文件
+        content_en = {
+            "message_url": ALIBABA_DINGDING_TALK_URL % url,
+            "head": {"bgcolor": "FFF17334", "text": "Alifile云文件"},
+            "body": {
+                "title": "You are invited into a group",
+                "form": [
+                    {
+                        "key": "Invitor:",
+                        "value": email2nickname(ccnet_email)
+                    },
+                    {
+                        "key": "Group Name:",
+                        "value": "%s" % group.group_name
+                    },
+                    {
+                        "key": "Message From:",
+                        "value": "Alifile云文件"
+                    }
+                ]
+            }
+        }
+
+        to_work_no_list = [to_profile.work_no]
+        AlibabaMessageQueue.objects.add_dingding_message(
+                ALIBABA_MESSAGE_TOPIC_NOTICE,
+                content_cn, content_en, to_work_no_list)
+
 @receiver(comment_file_successful)
 def comment_file_successful_cb(sender, **kwargs):
     repo = kwargs['repo']
@@ -865,6 +1217,99 @@ def comment_file_successful_cb(sender, **kwargs):
     for u in notify_users:
         detail = file_comment_msg_to_json(repo.id, file_path, author, comment)
         UserNotification.objects.add_file_comment_msg(u, detail)
+
+    # for alibaba
+    from_profile = AlibabaProfile.objects.get_profile(author)
+    if not from_profile:
+        logger.debug('%s not found in alibaba profile table.' % author)
+    else:
+        base_url = get_site_scheme_and_netloc()
+        endpoint = reverse('view_lib_file', args=[repo.id, file_path])
+        url = urlparse.urljoin(base_url, endpoint)
+
+        ccnet_email = from_profile.uid
+        file_name = os.path.basename(file_path)
+
+        # Titile:您的文件有一个新的评论
+        # Form:
+        # 邀请人: 姓名(花名)
+        # 文件名称: 这是一个文件
+        # 评论内容: 这是一个评论
+        # 消息系统: Alifile云文件
+        content_cn = {
+            "message_url": ALIBABA_DINGDING_TALK_URL % url,
+            "head": {"bgcolor": "FFF17334", "text": "Alifile云文件"},
+            "body": {
+                "title": "您的文件有一个新的评论",
+                "form": [
+                    {
+                        "key": "邀请人:",
+                        "value": email2nickname(ccnet_email)
+                    },
+                    {
+                        "key": "文件名称:",
+                        "value": file_name
+                    },
+                    {
+                        "key": "评论内容:",
+                        "value": comment
+                    },
+                    {
+                        "key": "系统消息:",
+                        "value": "Alifile云文件"
+                    }
+                ]
+            }
+        }
+
+        # Ttile:One comment is added to your file
+        # Form:
+        # Invitor: 姓名(花名)
+        # File Name: This is a file
+        # Comment: This is the comment
+        # Message From: Alifle云文件
+        content_en = {
+            "message_url": ALIBABA_DINGDING_TALK_URL % url,
+            "head": {"bgcolor": "FFF17334", "text": "Alifile云文件"},
+            "body": {
+                "title": "One comment is added to your file",
+                "form": [
+                    {
+                        "key": "Invitor:",
+                        "value": email2nickname(ccnet_email)
+                    },
+                    {
+                        "key": "File Name:",
+                        "value": file_name
+                    },
+                    {
+                        "key": "Comment:",
+                        "value": comment
+                    },
+                    {
+                        "key": "系统消息:",
+                        "value": "Alifile云文件"
+                    }
+                ]
+            }
+        }
+
+        to_work_no_list = []
+        for to_user in notify_users:
+
+            if to_user == author:
+                continue
+
+            to_profile = AlibabaProfile.objects.get_profile(to_user)
+            if not to_profile:
+                logger.debug('%s not found in alibaba profile table.' % to_user)
+                continue
+
+            to_work_no_list.append(to_profile.work_no)
+
+        AlibabaMessageQueue.objects.add_dingding_message(
+                ALIBABA_MESSAGE_TOPIC_NOTICE,
+                content_cn, content_en, to_work_no_list)
 
 @receiver(accept_guest_invitation_successful)
 def accept_guest_invitation_successful_cb(sender, **kwargs):

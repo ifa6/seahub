@@ -57,6 +57,7 @@ from seahub.base.templatetags.seahub_tags import translate_seahub_time, \
     email2nickname, tsstr_sec
 from seahub.constants import PERMISSION_ADMIN
 from seahub.constants import HASH_URLS
+from seahub.group.signals import add_user_to_group
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -1411,6 +1412,11 @@ def ajax_group_members_import(request, group_id):
                 'email': work_no,
                 'error_msg': _('Internal Server Error')
                 })
+
+        add_user_to_group.send(sender=None,
+                               group_staff=username,
+                               group_id=group_id,
+                               added_user=ccnet_email)
 
     return HttpResponse(json.dumps(result), content_type=content_type)
 
