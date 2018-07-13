@@ -4243,3 +4243,7 @@ img.thumbnail {
     display:inline-block;
     margin-top:4px;
 }
+.side-nav-footer .item {
+  margin-right:0;
+  margin-left:10px;
+}
