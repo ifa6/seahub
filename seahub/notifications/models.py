@@ -765,7 +765,7 @@ from seahub.share.signals import share_repo_to_user_successful, \
     share_repo_to_group_successful
 from seahub.invitations.signals import accept_guest_invitation_successful
 from seahub.alibaba.models import AlibabaMessageQueue, AlibabaProfile, \
-        ALIBABA_MESSAGE_TOPIC_NOTICE, ALIBABA_DINGDING_TALK_URL
+        ALIBABA_MESSAGE_TOPIC_PUSH_MESSAGE, ALIBABA_DINGDING_TALK_URL
 
 @receiver(upload_file_successful)
 def add_upload_file_msg_cb(sender, **kwargs):
@@ -874,7 +874,7 @@ def add_share_repo_msg_cb(sender, **kwargs):
         to_work_no_list.append(to_profile.work_no)
 
         AlibabaMessageQueue.objects.add_dingding_message(
-                ALIBABA_MESSAGE_TOPIC_NOTICE,
+                ALIBABA_MESSAGE_TOPIC_PUSH_MESSAGE,
                 content_cn, content_en, to_work_no_list)
 
 @receiver(share_repo_to_group_successful)
@@ -991,7 +991,7 @@ def add_share_repo_to_group_msg_cb(sender, **kwargs):
             to_work_no_list.append(to_profile.work_no)
 
         AlibabaMessageQueue.objects.add_dingding_message(
-                ALIBABA_MESSAGE_TOPIC_NOTICE,
+                ALIBABA_MESSAGE_TOPIC_PUSH_MESSAGE,
                 content_cn, content_en, to_work_no_list)
 
 @receiver(grpmsg_added)
@@ -1099,7 +1099,7 @@ def grpmsg_added_cb(sender, **kwargs):
             to_work_no_list.append(to_profile.work_no)
 
         AlibabaMessageQueue.objects.add_dingding_message(
-                ALIBABA_MESSAGE_TOPIC_NOTICE,
+                ALIBABA_MESSAGE_TOPIC_PUSH_MESSAGE,
                 content_cn, content_en, to_work_no_list)
 
 @receiver(group_join_request)
@@ -1200,7 +1200,7 @@ def add_user_to_group_cb(sender, **kwargs):
 
         to_work_no_list = [to_profile.work_no]
         AlibabaMessageQueue.objects.add_dingding_message(
-                ALIBABA_MESSAGE_TOPIC_NOTICE,
+                ALIBABA_MESSAGE_TOPIC_PUSH_MESSAGE,
                 content_cn, content_en, to_work_no_list)
 
 @receiver(comment_file_successful)
@@ -1308,7 +1308,7 @@ def comment_file_successful_cb(sender, **kwargs):
             to_work_no_list.append(to_profile.work_no)
 
         AlibabaMessageQueue.objects.add_dingding_message(
-                ALIBABA_MESSAGE_TOPIC_NOTICE,
+                ALIBABA_MESSAGE_TOPIC_PUSH_MESSAGE,
                 content_cn, content_en, to_work_no_list)
 
 @receiver(accept_guest_invitation_successful)

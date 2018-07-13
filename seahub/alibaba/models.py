@@ -12,14 +12,18 @@ from __future__ import unicode_literals
 import logging
 import json
 import uuid
+import logging
 
 from django.db import models
 
+logger = logging.getLogger(__name__)
+
 try:
-    from seahub.settings import ALIBABA_MESSAGE_TOPIC_NOTICE, \
-            ALIBABA_DINGDING_TALK_URL
+    from seahub.settings import ALIBABA_MESSAGE_TOPIC_PUSH_MESSAGE, \
+            ALIBABA_DINGDING_TALK_URL, ALIBABA_MESSAGE_TOPIC_LEAVE_FILE_HANDOVER
 except ImportError:
-    ALIBABA_MESSAGE_TOPIC_NOTICE = '01_push_message'
+    ALIBABA_MESSAGE_TOPIC_PUSH_MESSAGE = '01_push_message'
+    ALIBABA_MESSAGE_TOPIC_LEAVE_FILE_HANDOVER = '02_leave_file_handover'
     ALIBABA_DINGDING_TALK_URL = "dingtalk://dingtalkclient/page/link?url=%s&pc_slide=false"
 
 logger = logging.getLogger(__name__)
@@ -94,6 +98,39 @@ class AlibabaMessageQueueManager(models.Manager):
                 lock_version=0, is_consumed=0,
                 message_key=uuid.uuid4())
 
+        message.save(using=self._db)
+        return message
+
+    def add_lock(self, message_id):
+
+        try:
+            message = self.get(id=message_id)
+        except AlibabaMessageQueue.DoesNotExist:
+            logger.debug('Message %s does not exists' % message_id)
+
+        message.lock_version = 1
+        message.save(using=self._db)
+        return message
+
+    def remove_lock(self, message_id):
+
+        try:
+            message = self.get(id=message_id)
+        except AlibabaMessageQueue.DoesNotExist:
+            logger.debug('Message %s does not exists' % message_id)
+
+        message.lock_version = 0
+        message.save(using=self._db)
+        return message
+
+    def mark_message_consumed(self, message_id):
+
+        try:
+            message = self.get(id=message_id)
+        except AlibabaMessageQueue.DoesNotExist:
+            logger.debug('Message %s does not exists' % message_id)
+
+        message.is_consumed = 1
         message.save(using=self._db)
         return message
 
