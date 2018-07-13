@@ -2089,11 +2089,19 @@
 </script>
 <script type="text/template" id="group-import-members-form-tmpl">
 <form enctype="multipart/form-data" method="post" action="">
-    <h3 id="dialogTitle">{% trans "Import group members from a CSV file" %}</h3>
+    {% if request.LANGUAGE_CODE == 'zh-cn' or request.LANGUAGE_CODE == 'zh-tw' %}
+    <h3 id="dialogTitle">从.txt文件批量导入团队成员</h3>
     <input type="file" name="file" />
-    <p class="tip">{% trans "File format: user@mail.com" %}</p>
+    <p class="tip">说明：将团队成员工号写入.txt纯文本文件，每行一个工号</p>
     <button type="submit" class="submit">{% trans "Submit" %}</button>
     <p class="error hide"></p>
+    {% else %}
+    <h3 id="dialogTitle">Import group members in batch via a .txt file</h3>
+    <input type="file" name="file" />
+    <p class="tip">Note: Take your team members' employee ID, and keep one ID each line</p>
+    <button type="submit" class="submit">{% trans "Submit" %}</button>
+    <p class="error hide"></p>
+    {% endif %}
 </form>
 </script>
 
