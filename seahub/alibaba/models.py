@@ -28,21 +28,26 @@ logger = logging.getLogger(__name__)
 class AlibabaProfileManager(models.Manager):
 
     def get_profile(self, email):
-        try:
-            profile = super(AlibabaProfileManager, self).get(uid=email)
-        except AlibabaProfile.DoesNotExist:
-            logger.warn('Alibaba profile not found for user: %s' % email)
+
+        profile_list = super(AlibabaProfileManager, self).filter(uid=email)
+        if not profile_list:
             return None
 
-        return profile
+        for profile in profile_list:
+            # at work
+            if profile.work_status in ('A', 'a'):
+                return profile
 
     def get_profile_by_work_no(self, work_no):
-        try:
-            profile = super(AlibabaProfileManager, self).get(work_no=work_no)
-        except AlibabaProfile.DoesNotExist:
+
+        profile_list = super(AlibabaProfileManager, self).filter(work_no=work_no)
+        if not profile_list:
             return None
 
-        return profile
+        for profile in profile_list:
+            # at work
+            if profile.work_status in ('A', 'a'):
+                return profile
 
 
 class AlibabaProfile(models.Model):
