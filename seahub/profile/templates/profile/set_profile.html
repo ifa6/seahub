@@ -34,16 +34,16 @@
         <br/>
         <label>{% trans "职位:" %}</label><input type="text" value="{{ post_name }}" class="input" disabled />
         <br/>
-        <label>{% trans "部门:" %}</label><input type="text" value="{{ dept_name_en }}" class="input" disabled />
+        <label>{% trans "部门:" %}</label><input type="text" value="{{ dept_name }}" class="input" disabled />
         <br/>
         {% else %}
         <label>{% trans "Name:" %}</label><input type="text" value="{{ emp_name }}" class="input" disabled />
         <br/>
         <label>{% trans "Nick Name:" %}</label><input type="text" value="{{ nick_name }}" class="input" disabled />
         <br/>
-        <label>{% trans "Position:" %}</label><input type="text" value="{{ post_name }}" class="input" disabled />
+        <label>{% trans "Position:" %}</label><input type="text" value="{{ post_name_en }}" class="input" disabled />
         <br/>
-        <label>{% trans "Department:" %}</label><input type="text" value="{{ dept_name }}" class="input" disabled />
+        <label>{% trans "Department:" %}</label><input type="text" value="{{ dept_name_en }}" class="input" disabled />
         <br/>
         {% endif %}
     </form>

@@ -595,10 +595,10 @@
                         <% } %>
                         <li><a class="op view-details" href="#">{% trans "Details" %}</a></li>
                     </ul>
-                    <div class="menu-inner-divider"></div>
+                    <!-- <div class="menu-inner-divider"></div>
                     <ul>
-                        <li><a class="op open-via-client" href="seafile://openfile?repo_id=<%- repo_id %>&path=<% print(encodeURIComponent(dirent_path + '/')); %>">{% trans "Open via Client" %}</a></li>
-                    </ul>
+                    <li><a class="op open-via-client" href="seafile://openfile?repo_id=<%- repo_id %>&path=<% print(encodeURIComponent(dirent_path + '/')); %>">{% trans "Open via Client" %}</a></li>
+                    </ul> -->
                 </div>
             </div>
             <% } else if (dirent.perm == 'r') { %>
@@ -766,10 +766,10 @@
                         <% } %>
                         <li><a class="op view-details" href="#">{% trans "Details" %}</a></li>
                     </ul>
-                    <div class="menu-inner-divider"></div>
+                    <!-- <div class="menu-inner-divider"></div>
                     <ul>
-                        <li><a class="op open-via-client" href="seafile://openfile?repo_id=<%- repo_id %>&path=<% print(encodeURIComponent(dirent_path)); %>">{% trans "Open via Client" %}</a></li>
-                    </ul>
+                    <li><a class="op open-via-client" href="seafile://openfile?repo_id=<%- repo_id %>&path=<% print(encodeURIComponent(dirent_path)); %>">{% trans "Open via Client" %}</a></li>
+                    </ul> -->
                 </div>
             </div>
             <% } else if (dirent.perm == 'r') { %>
@@ -993,10 +993,10 @@
         </ul>
 
         <% if (dirent.perm == 'rw') { %>
-        <div class="menu-inner-divider"></div>
+        <!-- <div class="menu-inner-divider"></div>
         <ul>
-            <li><a class="op open-via-client" href="seafile://openfile?repo_id=<%= repo_id %>&path=<% print(encodeURIComponent(dirent_path)); %>">{% trans "Open via Client" %}</a></li>
-        </ul>
+        <li><a class="op open-via-client" href="seafile://openfile?repo_id=<%= repo_id %>&path=<% print(encodeURIComponent(dirent_path)); %>">{% trans "Open via Client" %}</a></li>
+        </ul> -->
         <% } %>
     </div>
 </script>
@@ -1035,10 +1035,10 @@
         </ul>
 
         <% if (dirent.perm == 'rw') { %>
-        <div class="menu-inner-divider"></div>
+        <!-- <div class="menu-inner-divider"></div>
         <ul>
-            <li><a class="op open-via-client" href="seafile://openfile?repo_id=<%= repo_id %>&path=<% print(encodeURIComponent(dirent_path)); %>">{% trans "Open via Client" %}</a></li>
-        </ul>
+        <li><a class="op open-via-client" href="seafile://openfile?repo_id=<%= repo_id %>&path=<% print(encodeURIComponent(dirent_path)); %>">{% trans "Open via Client" %}</a></li> -->
+        <!-- </ul> -->
         <% } %>
     </div>
 </script>
@@ -2414,7 +2414,7 @@
                 <%- app.pageOptions.name %>
             </div>
         </div>
-        <!-- <div class="loading-icon loading-tip"></div> -->
+        <div class="loading-icon loading-tip"></div>
         <p class="error alc hide"></p>
         <div id="space-traffic" class="hide"></div>
         <a class="item" href="{{ SITE_ROOT }}profile/">{% trans "Settings" %}</a>

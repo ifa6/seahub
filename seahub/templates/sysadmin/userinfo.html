@@ -40,29 +40,21 @@
             <dt>工号</dt>
             <dd>
                 <span id="reference-id">
-                  {{ ali_profile.work_no }}
+                  {{ work_no }}
                 </span>
             </dd>
 
             <dt>职位</dt>
             <dd>
                 <span id="reference-id">
-                  {% if LANGUAGE_CODE == 'zh-cn' %}
-                  {{ ali_profile.post_name }}
-                  {% else %}
-                  {{ ali_profile.post_name_en }}
-                  {% endif %}
+                  {{ post_name }}
                 </span>
             </dd>
 
             <dt>{% trans "Department" %}</dt>
             <dd>
                 <span id="department">
-                  {% if LANGUAGE_CODE == 'zh-cn' %}
-                  {{ ali_profile.dept_name }}
-                  {% else %}
-                  {{ ali_profile.dept_name_en }}
-                  {% endif %}
+                  {{ department }}
                 </span>
             </dd>
 

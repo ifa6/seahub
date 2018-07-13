@@ -148,11 +148,19 @@ define([
             $form.modal({focus:false, minWidth:268});
             $('#simplemodal-container').css({'width':'auto', 'height':'auto'});
 
+            var p_l = '';
+            if (app.pageOptions.language_code == 'zh-cn') {
+                p_l = '工号、姓名或者花名';
+            }
+            else {
+                p_l = 'Employee ID, employee name or nick name';
+            }
+          
             $('[name="email"]', $form).select2($.extend(
                 Common.contactInputOptionsForSelect2(), {
                 width: '268px',
                 maximumSelectionLength: 1,
-                placeholder: gettext("Search user or enter email and press Enter")
+                placeholder: p_l,
             }));
 
             $form.on('submit', function() {

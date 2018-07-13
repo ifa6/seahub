@@ -17,6 +17,7 @@ from seahub.api2.utils import api_error
 from seahub.api2.throttling import UserRateThrottle
 from seahub.api2.authentication import TokenAuthentication
 from seahub.avatar.settings import AVATAR_DEFAULT_SIZE
+from seahub.base.templatetags.seahub_tags import email2nickname
 from seahub.utils import string2list, is_org_context
 from seahub.base.accounts import User
 from seahub.group.signals import add_user_to_group
@@ -90,7 +91,7 @@ class GroupMembers(APIView):
 
         try:
             if is_group_member(group_id, email):
-                error_msg = _(u'User %s is already a group member.') % email
+                error_msg = _(u'User %s is already a group member.') % email2nickname(email)
                 return api_error(status.HTTP_400_BAD_REQUEST, error_msg)
 
             if is_org_context(request):

@@ -88,7 +88,7 @@ except ImportError:
 from seahub.utils.two_factor_auth import has_two_factor_auth
 from termsandconditions.models import TermsAndConditions
 
-from seahub.alibaba.models import AlibabaProfile
+from seahub.alibaba.utils import get_ali_user_profile_dict
 
 logger = logging.getLogger(__name__)
 
@@ -629,7 +629,7 @@ def user_info(request, email):
     # get user profile
     profile = Profile.objects.get_profile_by_user(email)
     d_profile = DetailedProfile.objects.get_detailed_profile_by_user(email)
-    ali_profile = AlibabaProfile.objects.get_profile(email)
+    ali_p = get_ali_user_profile_dict(request, email)
 
     user_shared_links = []
     # download links
@@ -740,7 +740,9 @@ def user_info(request, email):
             'email': email,
             'profile': profile,
             'd_profile': d_profile,
-            'ali_profile': ali_profile,
+            "work_no": ali_p['work_no'],
+            "post_name": ali_p['post_name'],
+            "department": ali_p['dept_name'],
             'org_name': org_name,
             'user_shared_links': user_shared_links,
             'enable_sys_admin_view_repo': ENABLE_SYS_ADMIN_VIEW_REPO,

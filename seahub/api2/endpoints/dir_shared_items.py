@@ -9,7 +9,6 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from django.utils import translation
 from django.utils.translation import ugettext as _
 
 import seaserv
@@ -35,7 +34,7 @@ from seahub.share.signals import share_repo_to_user_successful, share_repo_to_gr
 from seahub.constants import PERMISSION_READ, PERMISSION_READ_WRITE, \
         PERMISSION_ADMIN
 
-from seahub.alibaba.models import AlibabaProfile
+from seahub.alibaba.utils import get_ali_user_profile_dict
 
 logger = logging.getLogger(__name__)
 json_content_type = 'application/json; charset=utf-8'
@@ -73,21 +72,16 @@ class DirSharedItemsEndpoint(APIView):
         admin_users = ExtraSharePermission.objects.get_admin_users_by_repo(repo_id)
         ret = []
 
-        if translation.get_language() != 'zh-cn':
-            use_en = True
-        else:
-            use_en = False
-
         for item in share_items:
-            ali_p = AlibabaProfile.objects.get_profile(item.user)
+            ali_p = get_ali_user_profile_dict(request, item.user)
             ret.append({
                 "share_type": "user",
                 "user_info": {
                     "name": item.user,
                     "nickname": email2nickname(item.user),
-                    "work_no": ali_p.work_no,
-                    "post_name": ali_p.post_name_en if use_en else ali_p.post_name,
-                    "department": ali_p.dept_name_en if use_en else ali_p.dept_name,
+                    "work_no": ali_p['work_no'],
+                    "post_name": ali_p['post_name'],
+                    "department": ali_p['dept_name'],
                 },
                 "permission": item.perm,
                 "is_admin": item.user in admin_users
@@ -370,19 +364,15 @@ class DirSharedItemsEndpoint(APIView):
 
                         share_dir_to_user(repo, path, repo_owner, username, to_user, permission, None)
 
-                    if translation.get_language() != 'zh-cn':
-                        use_en = True
-                    else:
-                        use_en = False
-                    ali_p = AlibabaProfile.objects.get_profile(to_user)
+                    ali_p = get_ali_user_profile_dict(request, to_user)
                     result['success'].append({
                         "share_type": "user",
                         "user_info": {
                             "name": to_user,
                             "nickname": email2nickname(to_user),
-                            "work_no": ali_p.work_no,
-                            "post_name": ali_p.post_name_en if use_en else ali_p.post_name,
-                            "department": ali_p.dept_name_en if use_en else ali_p.dept_name,
+                            "work_no": ali_p['work_no'],
+                            "post_name": ali_p['post_name'],
+                            "department": ali_p['dept_name'],
                         },
                         "permission": PERMISSION_READ_WRITE if permission == PERMISSION_ADMIN else permission,
                         "is_admin": permission == PERMISSION_ADMIN

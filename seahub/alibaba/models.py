@@ -9,6 +9,7 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from __future__ import unicode_literals
 
+import logging
 import json
 import uuid
 
@@ -21,12 +22,16 @@ except ImportError:
     ALIBABA_MESSAGE_TOPIC_NOTICE = '01_push_message'
     ALIBABA_DINGDING_TALK_URL = "dingtalk://dingtalkclient/page/link?url=%s&pc_slide=false"
 
+logger = logging.getLogger(__name__)
+
+
 class AlibabaProfileManager(models.Manager):
 
     def get_profile(self, email):
         try:
             profile = super(AlibabaProfileManager, self).get(uid=email)
         except AlibabaProfile.DoesNotExist:
+            logger.warn('Alibaba profile not found for user: %s' % email)
             return None
 
         return profile

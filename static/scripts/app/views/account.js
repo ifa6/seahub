@@ -38,28 +38,28 @@ define([
             var _this = this;
 
             this.$error.hide();
-            // this.$loadingTip.show();
+            this.$loadingTip.show();
             this.$space.addClass('hide');
 
-            // $.ajax({
-            //     url: Common.getUrl({'name': 'space_and_traffic'}),
-            //     dataType: 'json',
-            //     cache: false,
-            //     success: function(data) {
-            //         _this.$loadingTip.hide();
-            //         _this.$space.html(data['html']).removeClass('hide');
-            //     },
-            //     error: function(xhr, textStatus, errorThrown) {
-            //         _this.$loadingTip.hide();
-            //         var err_msg;
-            //         if (xhr.responseText) {
-            //             err_msg = JSON.parse(xhr.responseText).error;
-            //         } else {
-            //             err_msg = gettext('Please check the network.');
-            //         }
-            //         _this.$error.html(err_msg).show();
-            //     }
-            // });
+            $.ajax({
+                url: Common.getUrl({'name': 'space_and_traffic'}),
+                dataType: 'json',
+                cache: false,
+                success: function(data) {
+                    _this.$loadingTip.hide();
+                    _this.$space.html(data['html']).removeClass('hide');
+                },
+                error: function(xhr, textStatus, errorThrown) {
+                    _this.$loadingTip.hide();
+                    var err_msg;
+                    if (xhr.responseText) {
+                        err_msg = JSON.parse(xhr.responseText).error;
+                    } else {
+                        err_msg = gettext('Please check the network.');
+                    }
+                    _this.$error.html(err_msg).show();
+                }
+            });
 
             this.$account.append(this.$el);
         }

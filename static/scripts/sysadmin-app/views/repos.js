@@ -50,11 +50,19 @@ define([
             $form.modal();
             $('#simplemodal-container').css({'height':'auto'});
 
+            var p_l = '';
+            if (app.pageOptions.language_code == 'zh-cn') {
+                p_l = '工号、姓名或者花名';
+            }
+            else {
+                p_l = 'Employee ID, employee name or nick name';
+            }
+          
             $('[name="library_owner"]', $form).select2($.extend(
                 Common.contactInputOptionsForSelect2(), {
                 width: '100%',
                 maximumSelectionLength: 1,
-                placeholder: gettext("Search user or enter email and press Enter")
+                placeholder: p_l,
             }));
 
             $form.on('submit', function() {
