@@ -64,7 +64,7 @@ def client_sso(request, uuid):
         logger.error('%s is not safe url.' % next_page)
         next_page = reverse('client_sso_complete', args=[uuid, ])
 
-    redirect_url = reverse('saml2_login') + '?next=' + next_page
+    redirect_url = reverse('saml2_login') + '?next=' + urlquote(next_page)
     return HttpResponseRedirect(redirect_url)
 
 @login_required
