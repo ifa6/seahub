@@ -5,6 +5,7 @@ import os
 import json
 import logging
 import urlparse
+import urllib
 
 from django.db import models
 from django.conf import settings
@@ -810,7 +811,7 @@ def add_share_repo_msg_cb(sender, **kwargs):
     else:
         base_url = get_site_scheme_and_netloc()
         endpoint = '#shared-libs/lib/%s' % repo.id
-        url = urlparse.urljoin(base_url, endpoint)
+        url = urllib.quote(urlparse.urljoin(base_url, endpoint))
 
         ccnet_email = from_profile.uid
 
@@ -908,7 +909,7 @@ def add_share_repo_to_group_msg_cb(sender, **kwargs):
     else:
         base_url = get_site_scheme_and_netloc()
         endpoint = '#group/%s/lib/%s' % (group.id, repo.id)
-        url = urlparse.urljoin(base_url, endpoint)
+        url = urllib.quote(urlparse.urljoin(base_url, endpoint))
 
         ccnet_email = from_profile.uid
 
@@ -1017,7 +1018,7 @@ def grpmsg_added_cb(sender, **kwargs):
     else:
         base_url = get_site_scheme_and_netloc()
         endpoint = '#group/%s/discussions/' % group.id
-        url = urlparse.urljoin(base_url, endpoint)
+        url = urllib.quote(urlparse.urljoin(base_url, endpoint))
 
         ccnet_email = from_profile.uid
 
@@ -1141,7 +1142,7 @@ def add_user_to_group_cb(sender, **kwargs):
     else:
         base_url = get_site_scheme_and_netloc()
         endpoint = '#group/%s/' % group.id
-        url = urlparse.urljoin(base_url, endpoint)
+        url = urllib.quote(urlparse.urljoin(base_url, endpoint))
 
         ccnet_email = from_profile.uid
 
@@ -1225,7 +1226,7 @@ def comment_file_successful_cb(sender, **kwargs):
     else:
         base_url = get_site_scheme_and_netloc()
         endpoint = reverse('view_lib_file', args=[repo.id, file_path])
-        url = urlparse.urljoin(base_url, endpoint)
+        url = urllib.quote(urlparse.urljoin(base_url, endpoint))
 
         ccnet_email = from_profile.uid
         file_name = os.path.basename(file_path)
