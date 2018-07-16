@@ -8,7 +8,7 @@ from random import randint
 
 from django.core.management.base import BaseCommand
 
-from seaserv import seafile_api
+from seaserv import seafile_api, ccnet_api
 
 from seahub.alibaba.models import AlibabaMessageQueue, AlibabaProfile, \
         ALIBABA_MESSAGE_TOPIC_LEAVE_FILE_HANDOVER
@@ -36,73 +36,80 @@ class Command(BaseCommand):
             if message.lock_version == 1:
                 continue
 
-            AlibabaMessageQueue.objects.add_lock(message.id)
+            try:
+                AlibabaMessageQueue.objects.add_lock(message.id)
 
-            message_dict = json.loads(message.message_body)
-            leave_work_no = message_dict['leaveWorkNo']
-            super_work_no = message_dict['superWorkNo']
+                message_dict = json.loads(message.message_body)
+                leave_work_no = message_dict['leaveWorkNo']
+                super_work_no = message_dict['superWorkNo']
 
-            leave_work_profile = AlibabaProfile.objects.get_profile_by_work_no(leave_work_no)
-            if not leave_work_profile:
-                logger.debug('leaveWorkNo %s not found in alibaba profile.' % leave_work_no)
-                continue
+                leave_work_profile = AlibabaProfile.objects.get_profile_by_work_no(leave_work_no, False)
+                if not leave_work_profile:
+                    logger.debug('leaveWorkNo %s not found in alibaba profile.' % leave_work_no)
+                    continue
 
-            super_work_profile = AlibabaProfile.objects.get_profile_by_work_no(super_work_no)
-            if not super_work_profile:
-                logger.debug('superWorkNo%s not found in alibaba profile.' % super_work_no)
-                continue
+                super_work_profile = AlibabaProfile.objects.get_profile_by_work_no(super_work_no)
+                if not super_work_profile:
+                    logger.debug('superWorkNo%s not found in alibaba profile.' % super_work_no)
+                    continue
 
-            leave_ccnet_email = leave_work_profile.uid
-            super_ccnet_email = super_work_profile.uid
+                leave_ccnet_email = leave_work_profile.uid
+                super_ccnet_email = super_work_profile.uid
 
-            leave_owned_repos = seafile_api.get_owned_repo_list(
-                    leave_ccnet_email, ret_corrupted=False)
+                ccnet_user_obj = ccnet_api.get_emailuser(leave_ccnet_email)
+                if ccnet_user_obj:
+                    ccnet_api.update_emailuser('DB', ccnet_user_obj.id, '!', 0, 0)
 
-            for repo in leave_owned_repos:
+                leave_owned_repos = seafile_api.get_owned_repo_list(
+                        leave_ccnet_email, ret_corrupted=False)
 
-                if seafile_api.repo_has_been_shared(repo.id, including_groups=True):
+                for repo in leave_owned_repos:
 
-                    # get repo shared to user/group/public list
-                    shared_users = seafile_api.list_repo_shared_to(
-                            leave_ccnet_email, repo.id)
-                    shared_groups = seafile_api.list_repo_shared_group_by_user(
-                            leave_ccnet_email, repo.id)
-                    pub_repos = seafile_api.list_inner_pub_repos_by_owner(leave_ccnet_email)
+                    if seafile_api.repo_has_been_shared(repo.id, including_groups=True):
 
-                    # transfer repo
-                    seafile_api.set_repo_owner(repo.id, super_ccnet_email)
+                        # get repo shared to user/group/public list
+                        shared_users = seafile_api.list_repo_shared_to(
+                                leave_ccnet_email, repo.id)
+                        shared_groups = seafile_api.list_repo_shared_group_by_user(
+                                leave_ccnet_email, repo.id)
+                        pub_repos = seafile_api.list_inner_pub_repos_by_owner(leave_ccnet_email)
 
-                    # reshare repo to user
-                    for shared_user in shared_users:
+                        # transfer repo
+                        seafile_api.set_repo_owner(repo.id, super_ccnet_email)
 
-                        shared_username = shared_user.user
-                        if super_ccnet_email== shared_username:
-                            continue
+                        # reshare repo to user
+                        for shared_user in shared_users:
 
-                        seafile_api.share_repo(repo.id, super_ccnet_email,
-                                shared_username, shared_user.perm)
+                            shared_username = shared_user.user
+                            if super_ccnet_email== shared_username:
+                                continue
 
-                    # reshare repo to group
-                    for shared_group in shared_groups:
+                            seafile_api.share_repo(repo.id, super_ccnet_email,
+                                    shared_username, shared_user.perm)
 
-                        shared_group_id = shared_group.group_id
-                        if not is_group_member(shared_group_id, super_ccnet_email):
-                            continue
+                        # reshare repo to group
+                        for shared_group in shared_groups:
 
-                        seafile_api.set_group_repo(repo.id, shared_group_id,
-                                super_ccnet_email, shared_group.perm)
+                            shared_group_id = shared_group.group_id
+                            if not is_group_member(shared_group_id, super_ccnet_email):
+                                continue
 
-                    # check if current repo is pub-repo
-                    # if YES, reshare current repo to public
-                    for pub_repo in pub_repos:
+                            seafile_api.set_group_repo(repo.id, shared_group_id,
+                                    super_ccnet_email, shared_group.perm)
 
-                        if repo.id != pub_repo.id:
-                            continue
+                        # check if current repo is pub-repo
+                        # if YES, reshare current repo to public
+                        for pub_repo in pub_repos:
 
-                        seafile_api.add_inner_pub_repo(repo.id, pub_repo.permission)
-                        break
-                else:
-                    seafile_api.remove_repo(repo.id)
+                            if repo.id != pub_repo.id:
+                                continue
+
+                            seafile_api.add_inner_pub_repo(repo.id, pub_repo.permission)
+                            break
+                    else:
+                        seafile_api.remove_repo(repo.id)
+            except Exception as e:
+                logger.error(e)
 
         for message in messages:
             AlibabaMessageQueue.objects.remove_lock(message.id)

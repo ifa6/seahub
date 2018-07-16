@@ -42,16 +42,19 @@ class AlibabaProfileManager(models.Manager):
             if profile.work_status in ('A', 'a'):
                 return profile
 
-    def get_profile_by_work_no(self, work_no):
+    def get_profile_by_work_no(self, work_no, at_work=True):
 
         profile_list = super(AlibabaProfileManager, self).filter(work_no=work_no)
         if not profile_list:
             return None
 
-        for profile in profile_list:
-            # at work
-            if profile.work_status in ('A', 'a'):
-                return profile
+        if at_work:
+            for profile in profile_list:
+                # at work
+                if profile.work_status in ('A', 'a'):
+                    return profile
+        else:
+            return profile_list[0]
 
 
 class AlibabaProfile(models.Model):
