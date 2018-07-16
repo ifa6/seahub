@@ -2092,13 +2092,13 @@
     {% if request.LANGUAGE_CODE == 'zh-cn' or request.LANGUAGE_CODE == 'zh-tw' %}
     <h3 id="dialogTitle">从.txt文件批量导入团队成员</h3>
     <input type="file" name="file" />
-    <p class="tip">说明：将团队成员工号写入.txt纯文本文件，每行一个工号</p>
+    <p class="tip">说明：将团队成员工号写入.txt纯文本文件，每行一个工号<br>例子：<br>101012<br>012345<br>101011<br>000311<br>......</p>
     <button type="submit" class="submit">{% trans "Submit" %}</button>
     <p class="error hide"></p>
     {% else %}
     <h3 id="dialogTitle">Import group members in batch via a .txt file</h3>
     <input type="file" name="file" />
-    <p class="tip">Note: Take your team members' employee ID, and keep one ID each line</p>
+    <p class="tip">Note: Take your team members' employee ID, and keep one ID each line<br>Example:<br>101012<br>012345<br>101011<br>000311<br>......</p>
     <button type="submit" class="submit">{% trans "Submit" %}</button>
     <p class="error hide"></p>
     {% endif %}
