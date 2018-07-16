@@ -1,6 +1,7 @@
 # Copyright (c) 2012-2016 Seafile Ltd.
 from django.conf.urls import url, include
 from django.views.generic import TemplateView
+from seahub.settings import ALIBABA_HELP_URLS
 
 urlpatterns = [
     url(r'^$', TemplateView.as_view(template_name="help/install.html") ),
@@ -14,3 +15,5 @@ urlpatterns = [
     url(r'^ignore/$', TemplateView.as_view(template_name="help/ignore.html") ),
     url(r'^encrypted_libraries/$', TemplateView.as_view(template_name="help/encrypted_libraries.html") ),
 ]
+
+urlpatterns.extend(ALIBABA_HELP_URLS)
