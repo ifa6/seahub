@@ -1,7 +1,11 @@
 # Copyright (c) 2012-2016 Seafile Ltd.
 from django.conf.urls import url, include
 from django.views.generic import TemplateView
-from seahub.settings import ALIBABA_HELP_URLS
+
+try:
+    from seahub.settings import ALIBABA_HELP_URLS
+except ImportError:
+    ALIBABA_HELP_URLS = []
 
 urlpatterns = [
     url(r'^$', TemplateView.as_view(template_name="help/install.html") ),
