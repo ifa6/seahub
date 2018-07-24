@@ -35,12 +35,16 @@ class AlibabaProfileManager(models.Manager):
 
         profile_list = super(AlibabaProfileManager, self).filter(uid=email)
         if not profile_list:
+            logger.info('No profile found for user: %s' % email)
             return None
 
         for profile in profile_list:
             # at work
             if profile.work_status in ('A', 'a'):
                 return profile
+
+        logger.info('User %s is not at work status' % email)
+        return None
 
     def get_profile_by_work_no(self, work_no, at_work=True):
 
