@@ -32,32 +32,3 @@ def get_ali_user_profile_dict(request, uid):
         "post_name": post_name,
         "dept_name": dept,
     }
-
-def update_user_avatar(request, pic=None):
-    username = request.user.username
-    if not pic:
-        ali_p = AlibabaProfile.objects.get_profile(username)
-        if not ali_p:
-            return
-
-        pic = ali_p.personal_photo_url
-        if not pic:
-            return
-
-    logger.info("start to retrieve pic from %s" % pic)
-
-    filedata = urllib2.urlopen(pic)
-    datatowrite = filedata.read()
-    filename = '/tmp/%s.jpg' % username
-    with open(filename, 'wb') as f:
-        f.write(datatowrite)
-
-    logger.info("save pic to %s" % filename)
-    avatar = Avatar(emailuser=username, primary=True)
-    avatar.avatar.save(
-        'image.jpg', File(open(filename))
-    )
-    avatar.save()
-    avatar_updated.send(sender=Avatar, user=request.user, avatar=avatar)
-
-    os.remove(filename)

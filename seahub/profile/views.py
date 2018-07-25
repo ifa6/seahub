@@ -14,6 +14,7 @@ from seaserv import seafile_api
 from forms import DetailedProfileForm
 from models import Profile, DetailedProfile
 from seahub.auth.decorators import login_required
+from seahub.avatar.util import get_alibaba_user_avatar_url
 from seahub.utils import is_org_context, is_pro_version, is_valid_username
 from seahub.base.accounts import User
 from seahub.base.templatetags.seahub_tags import email2nickname
@@ -46,7 +47,7 @@ def edit_profile(request):
         profile = AlibabaProfile.objects.get_profile(username)
         init_dict = {}
         if profile:
-            init_dict['personal_photo_url'] = profile.personal_photo_url or ''
+            init_dict['personal_photo_url'] = get_alibaba_user_avatar_url(username)
             init_dict['emp_name'] = profile.emp_name or ''
             init_dict['nick_name'] = profile.nick_name or ''
             init_dict['post_name'] = profile.post_name or ''
@@ -62,7 +63,7 @@ def user_profile(request, username):
     profile = AlibabaProfile.objects.get_profile(username)
     init_dict = {}
     if profile:
-        init_dict['personal_photo_url'] = profile.personal_photo_url or ''
+        init_dict['personal_photo_url'] = get_alibaba_user_avatar_url(username)
         init_dict['emp_name'] = profile.emp_name or ''
         init_dict['nick_name'] = profile.nick_name or ''
         init_dict['work_no'] = profile.work_no or ''

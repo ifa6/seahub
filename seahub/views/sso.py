@@ -97,12 +97,6 @@ def client_sso_complete(request, uuid):
         t.completed(email=username, api_key=api_token.key)
         logger.info('Client SSO success, uuid: %s, user: %s' % (uuid, username))
 
-        from seahub.alibaba.utils import update_user_avatar
-        try:
-            update_user_avatar(request)
-        except Exception as e:
-            logger.error(e)
-            pass
     else:
         logger.warn('Client SSO token is not waiting, skip.')
 

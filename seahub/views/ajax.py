@@ -25,6 +25,7 @@ from seaserv import seafile_api, is_passwd_set, ccnet_api, \
 from pysearpc import SearpcError
 
 from seahub.auth.decorators import login_required_ajax
+from seahub.avatar.util import get_alibaba_user_avatar_url
 from seahub.base.decorators import require_POST
 from seahub.forms import RepoRenameDirentForm
 from seahub.options.models import UserOptions, CryptoOptionNotSetError
@@ -1372,7 +1373,7 @@ def ajax_group_members_import(request, group_id):
             'group_id': group_id,
             "name": emp_nick_name,
             'email': alibaba_profile.uid,
-            "avatar_url": alibaba_profile.personal_photo_url or '',
+            "avatar_url": get_alibaba_user_avatar_url(alibaba_profile.uid),
         }
         return member_info
 

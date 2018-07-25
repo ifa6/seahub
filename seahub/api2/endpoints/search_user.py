@@ -24,6 +24,7 @@ from seahub.base.templatetags.seahub_tags import email2nickname, \
 from seahub.profile.models import Profile
 from seahub.contacts.models import Contact
 from seahub.avatar.templatetags.avatar_tags import api_avatar_url
+from seahub.avatar.util import get_alibaba_user_avatar_url
 
 from seahub.settings import ENABLE_GLOBAL_ADDRESSBOOK, \
     ENABLE_SEARCH_FROM_LDAP_DIRECTLY
@@ -123,7 +124,7 @@ class SearchUser(APIView):
 
             user_info = {}
             user_info['uid'] = user.uid
-            user_info['personal_photo_url'] = user.personal_photo_url or ''
+            user_info['personal_photo_url'] = get_alibaba_user_avatar_url(user.uid)
             user_info['emp_name'] = user.emp_name or ''
             user_info['nick_name'] = user.nick_name or ''
             user_info['work_no'] = user.work_no or ''
