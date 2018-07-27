@@ -130,7 +130,7 @@ def get_avatar_file_storage():
 
 from seahub.alibaba.models import AlibabaProfile
 from seahub.utils import normalize_cache_key
-def get_alibaba_user_avatar_url(user, size):
+def get_alibaba_user_avatar_url(user, size=AVATAR_DEFAULT_SIZE):
     if isinstance(user, User):
         uid = user.username
     else:
