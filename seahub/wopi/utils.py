@@ -38,11 +38,11 @@ def generate_access_token_cache_key(token):
 def get_file_info_by_token(token):
     """ Get file info from cache by access token
 
-    return tuple: (request_user, repo_id, file_path)
+    return tuple: (request_user, repo_id, file_path, obj_id)
     """
 
     key = generate_access_token_cache_key(token)
-    return cache.get(key) if cache.get(key) else (None, None, None)
+    return cache.get(key) if cache.get(key) else (None, None, None, None)
 
 def generate_discovery_cache_key(name, ext):
     """ Generate cache key for office web app hosting discovery
@@ -54,7 +54,7 @@ def generate_discovery_cache_key(name, ext):
     return 'wopi_' + name + '_' + ext
 
 def get_wopi_dict(request_user, repo_id, file_path,
-        action_name='view', language_code='en'):
+        action_name='view', language_code='en', obj_id=''):
     """ Prepare dict data for WOPI host page
     """
 
@@ -184,7 +184,7 @@ def get_wopi_dict(request_user, repo_id, file_path,
     full_action_url += '&ui=%s&rs=%s' % (WOPI_UI_LLCC, WOPI_UI_LLCC)
 
     # generate access token
-    user_repo_path_info = (request_user, repo_id, file_path)
+    user_repo_path_info = (request_user, repo_id, file_path, obj_id)
 
     # collobora office only allowed alphanumeric and _
     uid = uuid.uuid4()
@@ -198,6 +198,8 @@ def get_wopi_dict(request_user, repo_id, file_path,
     access_token_ttl = int((utc_timestamp + WOPI_ACCESS_TOKEN_EXPIRATION) * 1000)
 
     wopi_dict = {}
+    wopi_dict['repo_id'] = repo_id
+    wopi_dict['can_edit'] = action_name == 'edit'
     wopi_dict['action_url'] = full_action_url
     wopi_dict['access_token'] = access_token
     wopi_dict['access_token_ttl'] = access_token_ttl

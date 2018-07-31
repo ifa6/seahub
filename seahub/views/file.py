@@ -44,6 +44,7 @@ from seahub.tags.models import FileUUIDMap
 from seahub.wopi.utils import get_wopi_dict
 from seahub.auth.decorators import login_required
 from seahub.base.decorators import repo_passwd_set_required
+from seahub.base.accounts import ANONYMOUS_EMAIL
 from seahub.share.models import FileShare, check_share_link_common
 from seahub.share.decorators import share_link_audit
 from seahub.wiki.utils import get_wiki_dirent
@@ -765,6 +766,7 @@ def view_history_file_common(request, repo_id, ret_dict):
     current_commit = get_commit(repo.id, repo.version, commit_id)
     if not current_commit:
         raise Http404
+
     # get file type and extension
     filetype, fileext = get_file_type_and_ext(u_filename)
 
@@ -779,6 +781,57 @@ def view_history_file_common(request, repo_id, ret_dict):
 
     request.user_perm = user_perm
     if user_perm:
+
+        if filetype in (DOCUMENT, SPREADSHEET):
+
+            if ENABLE_OFFICE_WEB_APP and fileext in OFFICE_WEB_APP_FILE_EXTENSION:
+
+                wopi_dict = get_wopi_dict(ANONYMOUS_EMAIL, repo_id, path,
+                        'view', request.LANGUAGE_CODE, obj_id)
+
+                if wopi_dict:
+                    wopi_dict['doc_title'] = u_filename
+                    ret_dict['wopi_dict'] = wopi_dict
+                else:
+                    ret_dict['err'] = _(u'Error when prepare Office Online file preview page.')
+
+            if ENABLE_ONLYOFFICE and fileext in ONLYOFFICE_FILE_EXTENSION:
+
+                doc_key = hashlib.md5(force_bytes(repo_id + path + obj_id)).hexdigest()[:20]
+
+                if fileext in ('xls', 'xlsx', 'ods', 'fods', 'csv'):
+                    document_type = 'spreadsheet'
+                elif fileext in ('pptx', 'ppt', 'odp', 'fodp', 'ppsx', 'pps'):
+                    document_type = 'presentation'
+                else:
+                    document_type = 'text'
+
+                username = request.user.username
+                dl_token = seafile_api.get_fileserver_access_token(repo_id,
+                        obj_id, 'download', username, use_onetime=True)
+
+                if dl_token:
+
+                    doc_url = gen_file_get_url(dl_token, u_filename)
+                    doc_info = json.dumps({'repo_id': repo_id, 'file_path': path, 'username': username})
+                    cache.set("ONLYOFFICE_%s" % doc_key, doc_info, None)
+
+                    onlyoffice_dict = {
+                        'ONLYOFFICE_APIJS_URL': ONLYOFFICE_APIJS_URL,
+                        'repo_id': repo_id,
+                        'file_type': fileext,
+                        'doc_key': doc_key,
+                        'doc_title': u_filename,
+                        'doc_url': doc_url,
+                        'document_type': document_type,
+                        'callback_url': get_site_scheme_and_netloc().rstrip('/') + reverse('onlyoffice_editor_callback'),
+                        'can_edit': False,
+                        'username': username,
+                    }
+                    ret_dict['onlyoffice_dict'] = onlyoffice_dict
+                else:
+                    ret_dict['err'] = _(u'Error when prepare OnlyOffice file preview page.')
+
         # Check if can preview file
         fsize = get_file_size(repo.store_id, repo.version, obj_id)
         can_preview, err_msg = can_preview_file(u_filename, fsize, repo)
@@ -814,6 +867,14 @@ def view_history_file(request, repo_id):
     if not request.user_perm:
         return render_permission_error(request, _(u'Unable to view file'))
 
+    if ret_dict.has_key('wopi_dict'):
+        wopi_dict = ret_dict['wopi_dict']
+        return render(request, 'view_file_wopi.html', wopi_dict)
+
+    if ret_dict.has_key('onlyoffice_dict'):
+        onlyoffice_dict = ret_dict['onlyoffice_dict']
+        return render(request, 'view_file_onlyoffice.html', onlyoffice_dict)
+
     # generate file path navigator
     path = ret_dict['path']
     repo = ret_dict['repo']
@@ -827,6 +888,14 @@ def view_trash_file(request, repo_id):
     view_history_file_common(request, repo_id, ret_dict)
     if not request.user_perm:
         return render_permission_error(request, _(u'Unable to view file'))
+
+    if ret_dict.has_key('wopi_dict'):
+        wopi_dict = ret_dict['wopi_dict']
+        return render(request, 'view_file_wopi.html', wopi_dict)
+
+    if ret_dict.has_key('onlyoffice_dict'):
+        onlyoffice_dict = ret_dict['onlyoffice_dict']
+        return render(request, 'view_file_onlyoffice.html', onlyoffice_dict)
 
     basedir = request.GET.get('base', '')
     if not basedir:
@@ -844,6 +913,14 @@ def view_snapshot_file(request, repo_id):
     view_history_file_common(request, repo_id, ret_dict)
     if not request.user_perm:
         return render_permission_error(request, _(u'Unable to view file'))
+
+    if ret_dict.has_key('wopi_dict'):
+        wopi_dict = ret_dict['wopi_dict']
+        return render(request, 'view_file_wopi.html', wopi_dict)
+
+    if ret_dict.has_key('onlyoffice_dict'):
+        onlyoffice_dict = ret_dict['onlyoffice_dict']
+        return render(request, 'view_file_onlyoffice.html', onlyoffice_dict)
 
     # generate file path navigator
     path = ret_dict['path']
@@ -912,27 +989,27 @@ def view_shared_file(request, fileshare):
     """
     token = fileshare.token
 
+    # check if share link is encrypted
     password_check_passed, err_msg = check_share_link_common(request, fileshare)
     if not password_check_passed:
         d = {'token': token, 'view_name': 'view_shared_file', 'err_msg': err_msg}
         return render(request, 'share_access_validation.html', d)
 
-    shared_by = fileshare.username
+    # recourse check
     repo_id = fileshare.repo_id
     repo = get_repo(repo_id)
     if not repo:
         raise Http404
 
-    path = fileshare.path.rstrip('/')  # Normalize file path
+    path = normalize_file_path(fileshare.path)
     obj_id = seafile_api.get_file_id_by_path(repo_id, path)
     if not obj_id:
         return render_error(request, _(u'File does not exist'))
 
+    # permission check
+    shared_by = fileshare.username
     if not seafile_api.check_permission_by_path(repo_id, '/', shared_by):
         return render_error(request, _(u'Permission denied'))
-
-    filename = os.path.basename(path)
-    filetype, fileext = get_file_type_and_ext(filename)
 
     # Increase file shared link view_cnt, this operation should be atomic
     fileshare.view_cnt = F('view_cnt') + 1
@@ -940,21 +1017,28 @@ def view_shared_file(request, fileshare):
 
     # send statistic messages
     file_size = seafile_api.get_file_size(repo.store_id, repo.version, obj_id)
+    send_file_access_msg(request, repo, path, 'share-link')
+
+    # download shared file
     if request.GET.get('dl', '') == '1':
         if fileshare.get_permissions()['can_download'] is False:
             raise Http404
 
-        # download shared file
+        send_message('seahub.stats', 'file-download\t%s\t%s\t%s\t%s' %
+                     (repo_id, shared_by, obj_id, file_size))
+
         return _download_file_from_share_link(request, fileshare)
 
-    access_token = seafile_api.get_fileserver_access_token(repo.id,
+    # get raw file
+    access_token = seafile_api.get_fileserver_access_token(repo_id,
             obj_id, 'view', '', use_onetime=False)
 
     if not access_token:
         return render_error(request, _(u'Unable to view file'))
 
-
+    filename = os.path.basename(path)
     raw_path = gen_file_get_url(access_token, filename)
+
     if request.GET.get('raw', '') == '1':
         if fileshare.get_permissions()['can_download'] is False:
             raise Http404
@@ -965,19 +1049,63 @@ def view_shared_file(request, fileshare):
             next = request.META.get('HTTP_REFERER', settings.SITE_ROOT)
             return HttpResponseRedirect(next)
 
-        send_file_access_msg(request, repo, path, 'share-link')
-        send_message('seahub.stats', 'file-download\t%s\t%s\t%s\t%s' %
-                     (repo_id, shared_by, obj_id, file_size))
-
-        # view raw shared file, directly show/download file depends on
-        # browsers
+        # view raw shared file, directly show/download file depends on browsers
         return HttpResponseRedirect(raw_path)
 
-    # get file content
+    # preview file
+    filetype, fileext = get_file_type_and_ext(filename)
     ret_dict = {'err': '', 'file_content': '', 'encoding': '', 'file_enc': '',
                 'file_encoding_list': [], 'filetype': filetype}
-    fsize = get_file_size(repo.store_id, repo.version, obj_id)
-    can_preview, err_msg = can_preview_file(filename, fsize, repo)
+
+    if filetype in (DOCUMENT, SPREADSHEET):
+
+        if ENABLE_OFFICE_WEB_APP and fileext in OFFICE_WEB_APP_FILE_EXTENSION:
+
+            wopi_dict = get_wopi_dict(ANONYMOUS_EMAIL, repo_id, path,
+                    'view', request.LANGUAGE_CODE, obj_id)
+
+            if wopi_dict:
+                wopi_dict['doc_title'] = filename
+
+                return render(request, 'view_file_wopi.html', wopi_dict)
+            else:
+                ret_dict['err'] = _(u'Error when prepare Office Online file preview page.')
+
+        if ENABLE_ONLYOFFICE and fileext in ONLYOFFICE_FILE_EXTENSION:
+
+            doc_key = hashlib.md5(force_bytes(repo_id + path + obj_id)).hexdigest()[:20]
+
+            if fileext in ('xls', 'xlsx', 'ods', 'fods', 'csv'):
+                document_type = 'spreadsheet'
+            elif fileext in ('pptx', 'ppt', 'odp', 'fodp', 'ppsx', 'pps'):
+                document_type = 'presentation'
+            else:
+                document_type = 'text'
+
+            dl_token = seafile_api.get_fileserver_access_token(repo_id,
+                    obj_id, 'download', '', use_onetime=True)
+
+            if dl_token:
+
+                doc_url = gen_file_get_url(dl_token, filename)
+                doc_info = json.dumps({'repo_id': repo_id, 'file_path': path, 'username': ANONYMOUS_EMAIL})
+                cache.set("ONLYOFFICE_%s" % doc_key, doc_info, None)
+
+                return render(request, 'view_file_onlyoffice.html', {
+                    'ONLYOFFICE_APIJS_URL': ONLYOFFICE_APIJS_URL,
+                    'repo_id': repo_id,
+                    'file_type': fileext,
+                    'doc_key': doc_key,
+                    'doc_title': filename,
+                    'doc_url': doc_url,
+                    'document_type': document_type,
+                    'callback_url': get_site_scheme_and_netloc().rstrip('/') + reverse('onlyoffice_editor_callback'),
+                    'can_edit': False,
+                })
+            else:
+                ret_dict['err'] = _(u'Error when prepare OnlyOffice file preview page.')
+
+    can_preview, err_msg = can_preview_file(filename, file_size, repo)
     if can_preview:
         send_file_access_msg_when_preview(request, repo, path, 'share-link')
 
@@ -1083,85 +1211,135 @@ def view_raw_shared_file(request, token, obj_id, file_name):
 @share_link_audit
 def view_file_via_shared_dir(request, fileshare):
     token = fileshare.token
-    req_path = request.GET.get('p', '').rstrip('/')
+
+    # argument check
+    req_path = request.GET.get('p', '')
     if not req_path:
         return HttpResponseRedirect(reverse('view_shared_dir', args=[token]))
 
+    req_path = normalize_file_path(req_path)
+
+    # check if share link is encrypted
     password_check_passed, err_msg = check_share_link_common(request, fileshare)
     if not password_check_passed:
         d = {'token': token,
              'view_name': 'view_file_via_shared_dir',
              'path': req_path,
              'err_msg': err_msg,
-         }
+        }
         return render(request, 'share_access_validation.html', d)
 
-    shared_by = fileshare.username
+    # recourse check
     repo_id = fileshare.repo_id
     repo = get_repo(repo_id)
     if not repo:
         raise Http404
 
+    # recourse check
     # Get file path from frontend, and construct request file path
     # with fileshare.path to real path, used to fetch file content by RPC.
     real_path = posixpath.join(fileshare.path, req_path.lstrip('/'))
-
-    # generate dir navigator
-    if fileshare.path == '/':
-        zipped = gen_path_link(req_path, repo.name)
-    else:
-        zipped = gen_path_link(req_path, os.path.basename(fileshare.path[:-1]))
-
     obj_id = seafile_api.get_file_id_by_path(repo_id, real_path)
     if not obj_id:
         return render_error(request, _(u'File does not exist'))
 
+    # permission check
+    shared_by = fileshare.username
     if not seafile_api.check_permission_by_path(repo_id, '/', shared_by):
         return render_error(request, _(u'Permission denied'))
 
+    # send stats message
+    file_size = seafile_api.get_file_size(repo.store_id, repo.version, obj_id)
+    send_file_access_msg(request, repo, real_path, 'share-link')
+
+    # download shared file
     if request.GET.get('dl', '') == '1':
         if fileshare.get_permissions()['can_download'] is False:
             raise Http404
 
-        # download shared file
+        send_message('seahub.stats', 'file-download\t%s\t%s\t%s\t%s' %
+                     (repo_id, shared_by, obj_id, file_size))
+
         return _download_file_from_share_link(request, fileshare)
 
+    # get raw file
+    access_token = seafile_api.get_fileserver_access_token(repo.id,
+            obj_id, 'view', '', use_onetime=False)
+    if not access_token:
+        return render_error(request, _(u'Unable to view file'))
+
     filename = os.path.basename(req_path)
+    raw_path = gen_file_get_url(access_token, filename)
+
     if request.GET.get('raw', '0') == '1':
         if fileshare.get_permissions()['can_download'] is False:
             raise Http404
 
-        username = request.user.username
-        token = seafile_api.get_fileserver_access_token(repo_id,
-                obj_id, 'view', username, use_onetime=True)
+        # check whether owner's traffic over the limit
+        if user_traffic_over_limit(shared_by):
+            messages.error(request, _(u'Unable to view raw file, share link traffic is used up.'))
+            next = request.META.get('HTTP_REFERER', settings.SITE_ROOT)
+            return HttpResponseRedirect(next)
 
-        if not token:
-            return render_error(request, _(u'Unable to view file'))
+        # view raw shared file, directly show/download file depends on browsers
+        return HttpResponseRedirect(raw_path)
 
-        raw_url = gen_file_get_url(token, filename)
-        # send stats message
-        send_file_access_msg(request, repo, real_path, 'share-link')
-        return HttpResponseRedirect(raw_url)
-
-    file_size = seafile_api.get_file_size(repo.store_id, repo.version, obj_id)
     filetype, fileext = get_file_type_and_ext(filename)
-    access_token = seafile_api.get_fileserver_access_token(repo.id,
-            obj_id, 'view', '', use_onetime=False)
+    ret_dict = {'err': '', 'file_content': '', 'encoding': '', 'file_enc': '',
+                'file_encoding_list': [], 'filetype': filetype}
 
-    if not access_token:
-        return render_error(request, _(u'Unable to view file'))
+    if filetype in (DOCUMENT, SPREADSHEET):
 
-    raw_path = gen_file_get_url(access_token, filename)
-    inner_path = gen_inner_file_get_url(access_token, filename)
+        if ENABLE_OFFICE_WEB_APP and fileext in OFFICE_WEB_APP_FILE_EXTENSION:
+
+            wopi_dict = get_wopi_dict(ANONYMOUS_EMAIL, repo_id, real_path,
+                    'view', request.LANGUAGE_CODE, obj_id)
+
+            if wopi_dict:
+                wopi_dict['doc_title'] = filename
+                return render(request, 'view_file_wopi.html', wopi_dict)
+            else:
+                ret_dict['err'] = _(u'Error when prepare Office Online file preview page.')
+
+        if ENABLE_ONLYOFFICE and fileext in ONLYOFFICE_FILE_EXTENSION:
+
+            doc_key = hashlib.md5(force_bytes(repo_id + real_path + obj_id)).hexdigest()[:20]
+
+            if fileext in ('xls', 'xlsx', 'ods', 'fods', 'csv'):
+                document_type = 'spreadsheet'
+            elif fileext in ('pptx', 'ppt', 'odp', 'fodp', 'ppsx', 'pps'):
+                document_type = 'presentation'
+            else:
+                document_type = 'text'
+
+            dl_token = seafile_api.get_fileserver_access_token(repo_id,
+                    obj_id, 'download', '', use_onetime=True)
+
+            if dl_token:
+
+                doc_url = gen_file_get_url(dl_token, filename)
+                doc_info = json.dumps({'repo_id': repo_id, 'file_path': real_path, 'username': ANONYMOUS_EMAIL})
+                cache.set("ONLYOFFICE_%s" % doc_key, doc_info, None)
+
+                return render(request, 'view_file_onlyoffice.html', {
+                    'repo_id': repo_id,
+                    'ONLYOFFICE_APIJS_URL': ONLYOFFICE_APIJS_URL,
+                    'file_type': fileext,
+                    'doc_key': doc_key,
+                    'doc_title': filename,
+                    'doc_url': doc_url,
+                    'document_type': document_type,
+                    'callback_url': get_site_scheme_and_netloc().rstrip('/') + reverse('onlyoffice_editor_callback'),
+                    'can_edit': False,
+                })
+            else:
+                ret_dict['err'] = _(u'Error when prepare OnlyOffice file preview page.')
 
     img_prev = None
     img_next = None
 
-    # get file content
-    ret_dict = {'err': '', 'file_content': '', 'encoding': '', 'file_enc': '',
-                'file_encoding_list': [], 'filetype': filetype}
-    fsize = get_file_size(repo.store_id, repo.version, obj_id)
-    can_preview, err_msg = can_preview_file(filename, fsize, repo)
+    inner_path = gen_inner_file_get_url(access_token, filename)
+    can_preview, err_msg = can_preview_file(filename, file_size, repo)
     if can_preview:
         send_file_access_msg_when_preview(request, repo, real_path, 'share-link')
 
@@ -1201,6 +1379,12 @@ def view_file_via_shared_dir(request, fileshare):
 
     traffic_over_limit = user_traffic_over_limit(shared_by)
     permissions = fileshare.get_permissions()
+
+    # generate dir navigator
+    if fileshare.path == '/':
+        zipped = gen_path_link(req_path, repo.name)
+    else:
+        zipped = gen_path_link(req_path, os.path.basename(fileshare.path[:-1]))
 
     return render(request, 'shared_file_view.html', {
             'repo': repo,
