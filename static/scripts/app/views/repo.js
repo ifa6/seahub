@@ -250,7 +250,7 @@ define([
                 Common.contactInputOptionsForSelect2(), {
                 width: '280px',
                 maximumSelectionLength: 1,
-                placeholder: p_l,
+                placeholder: p_l
             }));
 
             $form.on('submit', function() {

@@ -168,8 +168,8 @@ define([
           
             $('[name="email"]', $form).select2($.extend(
                 Common.contactInputOptionsForSelect2(), {
+                placeholder: p_l,
                 width: '280px'
-                placeholder: p_l
             }));
 
             $form.submit(function() {
