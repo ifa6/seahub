@@ -88,6 +88,7 @@ class UserManager(object):
         return user_list
 
     def get(self, email=None, id=None):
+
         if not email and not id:
             raise User.DoesNotExist, 'User matching query does not exits.'
 
@@ -100,6 +101,10 @@ class UserManager(object):
 
         if not emailuser and not alibaba_profile:
             raise User.DoesNotExist, 'User matching query does not exits.'
+
+        if not emailuser:
+            ccnet_api.add_emailuser(email, '!', 0, 0)
+            emailuser = ccnet_api.get_emailuser(email)
 
         if emailuser:
             user = User(emailuser.email)
