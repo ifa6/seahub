@@ -810,7 +810,7 @@ def add_share_repo_msg_cb(sender, **kwargs):
             logger.debug('%s not found in alibaba profile table.' % to_user)
     else:
         base_url = get_site_scheme_and_netloc()
-        endpoint = '#shared-libs/lib/%s' % repo.id
+        endpoint = '%s#shared-libs/lib/%s' % (settings.SITE_ROOT, repo.id)
         url = urllib.quote(urlparse.urljoin(base_url, endpoint))
 
         ccnet_email = from_profile.uid
@@ -908,7 +908,7 @@ def add_share_repo_to_group_msg_cb(sender, **kwargs):
             logger.debug('Group %s not found.' % group_id)
     else:
         base_url = get_site_scheme_and_netloc()
-        endpoint = '#group/%s/lib/%s' % (group.id, repo.id)
+        endpoint = '%s#group/%s/lib/%s' % (settings.SITE_ROOT, group.id, repo.id)
         url = urllib.quote(urlparse.urljoin(base_url, endpoint))
 
         ccnet_email = from_profile.uid
@@ -1017,7 +1017,7 @@ def grpmsg_added_cb(sender, **kwargs):
             logger.debug('Group %s not found.' % group_id)
     else:
         base_url = get_site_scheme_and_netloc()
-        endpoint = '#group/%s/discussions/' % group.id
+        endpoint = '%s#group/%s/discussions/' % (settings.SITE_ROOT, group.id)
         url = urllib.quote(urlparse.urljoin(base_url, endpoint))
 
         ccnet_email = from_profile.uid
@@ -1141,7 +1141,7 @@ def add_user_to_group_cb(sender, **kwargs):
             logger.debug('Group %s not found.' % group_id)
     else:
         base_url = get_site_scheme_and_netloc()
-        endpoint = '#group/%s/' % group.id
+        endpoint = '%s#group/%s/' % (settings.SITE_ROOT, group.id)
         url = urllib.quote(urlparse.urljoin(base_url, endpoint))
 
         ccnet_email = from_profile.uid
