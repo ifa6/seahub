@@ -809,6 +809,10 @@ def add_share_repo_msg_cb(sender, **kwargs):
         if not to_profile:
             logger.debug('%s not found in alibaba profile table.' % to_user)
     else:
+        if path != '/':
+            repo_owner = seafile_api.get_repo_owner(repo.id)
+            repo = seafile_api.get_virtual_repo(repo.id, path, repo_owner)
+
         base_url = get_site_scheme_and_netloc()
         endpoint = '%s#shared-libs/lib/%s' % (settings.SITE_ROOT, repo.id)
         url = urllib.quote(urlparse.urljoin(base_url, endpoint))
