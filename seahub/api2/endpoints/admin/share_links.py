@@ -315,9 +315,6 @@ class AdminShareLinkDownload(APIView):
                 try:
                     # used for file audit
                     send_file_access_msg(request, repo, real_path, 'share-link')
-                    # used for traffic
-                    seaserv.send_message('seahub.stats', 'dir-download\t%s\t%s\t%s\t%s' %
-                            (repo_id, sharelink.username, real_obj_id, dir_size))
                 except Exception as e:
                     logger.error(e)
 
