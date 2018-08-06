@@ -218,7 +218,7 @@ class AdminShareLinkDownload(APIView):
             try:
                 # `username` parameter only used for encrypted repo
                 download_token = seafile_api.get_fileserver_access_token(repo_id,
-                        obj_id, 'download', sharelink.username, use_onetime=False)
+                        obj_id, 'download-link', sharelink.username, use_onetime=False)
             except Exception as e:
                 logger.error(e)
                 error_msg = 'Internal Server Error'
@@ -261,7 +261,7 @@ class AdminShareLinkDownload(APIView):
 
                 try:
                     download_token = seafile_api.get_fileserver_access_token(repo_id,
-                            real_obj_id, 'download', sharelink.username, use_onetime=False)
+                            real_obj_id, 'download-link', sharelink.username, use_onetime=False)
                 except Exception as e:
                     logger.error(e)
                     error_msg = 'Internal Server Error'
@@ -305,7 +305,7 @@ class AdminShareLinkDownload(APIView):
 
                 try:
                     zip_token = seafile_api.get_fileserver_access_token(repo_id,
-                            json.dumps(fake_obj_id), 'download-dir',
+                            json.dumps(fake_obj_id), 'download-dir-link',
                             sharelink.username, use_onetime=False)
                 except Exception as e:
                     logger.error(e)
