@@ -16,6 +16,7 @@ from seahub.avatar.templatetags.avatar_tags import api_avatar_url, \
         get_default_avatar_url
 from seahub.base.templatetags.seahub_tags import email2nickname, \
         email2contact_email
+from seahub.utils import is_org_context
 from seahub.utils.timeutils import timestamp_to_isoformat_timestr
 from seahub.group.utils import validate_group_name, check_group_name_conflict
 from seahub.admin_log.signals import admin_operation
@@ -95,8 +96,15 @@ class AdminAddressBookGroups(APIView):
         # TODO: check parent group exists
 
         try:
-            group_id = ccnet_api.create_group(group_name, group_owner,
-                                              parent_group_id=parent_group)
+            if is_org_context(request):
+                # request called by org admin
+                org_id = request.user.org.org_id
+                group_id = ccnet_api.create_org_group(
+                    org_id, group_name, group_owner,
+                    parent_group_id=parent_group)
+            else:
+                group_id = ccnet_api.create_group(group_name, group_owner,
+                                                  parent_group_id=parent_group)
             seafile_api.set_group_quota(group_id, -2)
         except SearpcError as e:
             logger.error(e)

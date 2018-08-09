@@ -24,7 +24,7 @@ from seahub.base.templatetags.seahub_tags import email2nickname, \
 from seahub.base.accounts import User
 from seahub.signals import repo_created
 from seahub.group.utils import is_group_admin
-from seahub.utils import is_valid_dirent_name, \
+from seahub.utils import is_valid_dirent_name, is_org_context, \
         is_pro_version, normalize_dir_path, is_valid_username, \
         send_perm_audit_msg
 from seahub.utils.repo import get_library_storages, get_repo_owner
@@ -110,6 +110,12 @@ class GroupOwnedLibraries(APIView):
             error_msg = 'No group quota.'
             return api_error(status.HTTP_403_FORBIDDEN, error_msg)
 
+        if is_org_context(request):
+            # request called by org admin
+            org_id = request.user.org.org_id
+        else:
+            org_id = -1
+
         # create group owned repo
         group_id = int(group_id)
         if is_pro_version() and ENABLE_STORAGE_CLASSES:
@@ -127,14 +133,21 @@ class GroupOwnedLibraries(APIView):
                         password, permission, storage_id)
             else:
                 # STORAGE_CLASS_MAPPING_POLICY == 'REPO_ID_MAPPING'
-                repo_id = seafile_api.add_group_owned_repo(group_id, repo_name,
-                        password, permission)
+                if org_id > 0:
+                    repo_id = seafile_api.org_add_group_owned_repo(
+                        org_id, group_id, repo_name, password, permission)
+                else:
+                    repo_id = seafile_api.add_group_owned_repo(
+                        group_id, repo_name, password, permission)
         else:
-            repo_id = seafile_api.add_group_owned_repo(group_id, repo_name,
-                    password, permission)
+            if org_id > 0:
+                repo_id = seafile_api.org_add_group_owned_repo(
+                    org_id, group_id, repo_name, password, permission)
+            else:
+                repo_id = seafile_api.add_group_owned_repo(
+                    group_id, repo_name, password, permission)
 
         # for activities
-        org_id = -1
         username = request.user.username
         library_template = request.data.get("library_template", '')
         repo_created.send(sender=None, org_id=org_id, creator=username,
@@ -220,7 +233,12 @@ class GroupOwnedLibrary(APIView):
             return api_error(status.HTTP_403_FORBIDDEN, error_msg)
 
         try:
-            seafile_api.delete_group_owned_repo(group_id, repo_id)
+            if is_org_context(request):
+                # request called by org admin
+                org_id = request.user.uorg.org_id
+                seafile_api.org_delete_group_owned_repo(org_id, group_id, repo_id)
+            else:
+                seafile_api.delete_group_owned_repo(group_id, repo_id)
         except Exception as e:
             logger.error(e)
             error_msg = 'Internal Server Error'
